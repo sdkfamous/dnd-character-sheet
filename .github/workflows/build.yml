@@ -32,6 +32,8 @@ jobs:
     - name: Copy HTML and CSS to dist
       run: |
         cp index.html dist/
+        # Fix script path for GitHub Pages (remove dist/ prefix since we're in dist/)
+        sed -i 's|src="dist/character-sheet.js"|src="./character-sheet.js"|g' dist/index.html
         if [ -d "css" ]; then cp -r css dist/; fi
         if [ -d "assets" ]; then cp -r assets dist/; fi
         
