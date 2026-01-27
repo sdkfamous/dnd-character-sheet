@@ -193,7 +193,7 @@ interface DnDCharacterData {
 
     // Ability Scores - broken down by source
     abilityScores: AbilityScores;
-    
+
     // Ability Modifiers (auto-calculated, but editable)
     abilityModifiers: {
         str: string;
@@ -203,7 +203,7 @@ interface DnDCharacterData {
         wis: string;
         cha: string;
     };
-    
+
     // Calculated Stats (editable)
     proficiencyBonus: string;
     passivePerception: number;
@@ -315,7 +315,7 @@ class CharacterSheet {
     private nextWeaponId: number = 100;
     private nextSpellId: number = 100;
     private layoutManager: LayoutManager;
-    
+
     // Undo/Redo functionality
     private history: DnDCharacterData[] = [];
     private historyIndex: number = -1;
@@ -346,7 +346,7 @@ class CharacterSheet {
             if (!data || typeof data !== 'object') {
                 throw new Error('Invalid data structure');
             }
-            
+
             // Migrate old formats and merge with defaults
             return this.mergeWithDefaults(data);
         } catch (error) {
@@ -363,11 +363,11 @@ class CharacterSheet {
             if (saved) {
                 try {
                     const fileData = JSON.parse(saved);
-                    
+
                     // Handle both old format (direct data) and new format (with character-definition and sheet-layout)
                     let characterData: any;
                     let layoutData: LayoutData | undefined;
-                    
+
                     if (fileData['character-definition'] && fileData['sheet-layout']) {
                         // New format
                         characterData = fileData['character-definition'];
@@ -376,71 +376,71 @@ class CharacterSheet {
                         // Old format - just character data
                         characterData = fileData;
                     }
-                    
+
                     // Apply layout if available
                     if (layoutData) {
                         this.layoutManager.setLayout(layoutData);
                     }
-                    
+
                     // Migrate old skills format to new format
                     if (characterData.skills && !Array.isArray(characterData.skills)) {
-                    const oldSkills = characterData.skills;
-                    const skillNames: { [key: string]: string } = {
-                        'athletics': 'Athletics',
-                        'acrobatics': 'Acrobatics',
-                        'sleight': 'Sleight of Hand',
-                        'stealth': 'Stealth',
-                        'arcana': 'Arcana',
-                        'history': 'History',
-                        'investigation': 'Investigation',
-                        'nature': 'Nature',
-                        'religion': 'Religion',
-                        'animal': 'Animal Handling',
-                        'insight': 'Insight',
-                        'medicine': 'Medicine',
-                        'perception': 'Perception',
-                        'survival': 'Survival',
-                        'deception': 'Deception',
-                        'intimidation': 'Intimidation',
-                        'performance': 'Performance',
-                        'persuasion': 'Persuasion'
-                    };
-                    const abilityMap: { [key: string]: 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha' } = {
-                        'athletics': 'str',
-                        'acrobatics': 'dex',
-                        'sleight': 'dex',
-                        'stealth': 'dex',
-                        'arcana': 'int',
-                        'history': 'int',
-                        'investigation': 'int',
-                        'nature': 'int',
-                        'religion': 'int',
-                        'animal': 'wis',
-                        'insight': 'wis',
-                        'medicine': 'wis',
-                        'perception': 'wis',
-                        'survival': 'wis',
-                        'deception': 'cha',
-                        'intimidation': 'cha',
-                        'performance': 'cha',
-                        'persuasion': 'cha'
-                    };
-                    characterData.skills = Object.entries(oldSkills).map(([key, proficient], index) => ({
-                        id: (index + 1).toString(),
-                        name: skillNames[key] || key,
-                        ability: abilityMap[key] || 'str',
-                        proficient: proficient as boolean,
-                        modifier: '+0'
-                    }));
-                }
-                // Ensure weapons array exists
-                if (!characterData.weapons || !Array.isArray(characterData.weapons)) {
-                    characterData.weapons = [];
-                }
-                // Ensure spells array exists
-                if (!characterData.spells || !Array.isArray(characterData.spells)) {
-                    characterData.spells = [];
-                }
+                        const oldSkills = characterData.skills;
+                        const skillNames: { [key: string]: string } = {
+                            'athletics': 'Athletics',
+                            'acrobatics': 'Acrobatics',
+                            'sleight': 'Sleight of Hand',
+                            'stealth': 'Stealth',
+                            'arcana': 'Arcana',
+                            'history': 'History',
+                            'investigation': 'Investigation',
+                            'nature': 'Nature',
+                            'religion': 'Religion',
+                            'animal': 'Animal Handling',
+                            'insight': 'Insight',
+                            'medicine': 'Medicine',
+                            'perception': 'Perception',
+                            'survival': 'Survival',
+                            'deception': 'Deception',
+                            'intimidation': 'Intimidation',
+                            'performance': 'Performance',
+                            'persuasion': 'Persuasion'
+                        };
+                        const abilityMap: { [key: string]: 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha' } = {
+                            'athletics': 'str',
+                            'acrobatics': 'dex',
+                            'sleight': 'dex',
+                            'stealth': 'dex',
+                            'arcana': 'int',
+                            'history': 'int',
+                            'investigation': 'int',
+                            'nature': 'int',
+                            'religion': 'int',
+                            'animal': 'wis',
+                            'insight': 'wis',
+                            'medicine': 'wis',
+                            'perception': 'wis',
+                            'survival': 'wis',
+                            'deception': 'cha',
+                            'intimidation': 'cha',
+                            'performance': 'cha',
+                            'persuasion': 'cha'
+                        };
+                        characterData.skills = Object.entries(oldSkills).map(([key, proficient], index) => ({
+                            id: (index + 1).toString(),
+                            name: skillNames[key] || key,
+                            ability: abilityMap[key] || 'str',
+                            proficient: proficient as boolean,
+                            modifier: '+0'
+                        }));
+                    }
+                    // Ensure weapons array exists
+                    if (!characterData.weapons || !Array.isArray(characterData.weapons)) {
+                        characterData.weapons = [];
+                    }
+                    // Ensure spells array exists
+                    if (!characterData.spells || !Array.isArray(characterData.spells)) {
+                        characterData.spells = [];
+                    }
                     // Validate and migrate data
                     return this.validateAndMigrateData(characterData);
                 } catch (parseError) {
@@ -493,7 +493,7 @@ class CharacterSheet {
         const mergeDefined = (defaultVal: any, savedVal: any) => {
             return (savedVal !== undefined && savedVal !== null) ? savedVal : defaultVal;
         };
-        
+
         return {
             ...defaults,
             // Only override defaults with defined values from saved data
@@ -823,13 +823,13 @@ class CharacterSheet {
     private updateAbilityScore(ability: AbilityName): void {
         const total = this.calculateTotalAbilityScore(ability);
         const modifier = this.calculateAbilityModifier(total);
-        
+
         // Update total display
         const totalEl = document.getElementById(`${ability}Total`);
         if (totalEl) {
             totalEl.textContent = total.toString();
         }
-        
+
         // Update modifier (auto-calculated, but field is still editable)
         const modEl = document.getElementById(`${ability}Mod`) as HTMLInputElement;
         if (modEl) {
@@ -881,18 +881,18 @@ class CharacterSheet {
     private pushHistory(): void {
         // Remove any history after current index (if user undid, then made new change)
         this.history = this.history.slice(0, this.historyIndex + 1);
-        
+
         // Add current state
         const stateCopy = JSON.parse(JSON.stringify(this.data));
         this.history.push(stateCopy);
         this.historyIndex++;
-        
+
         // Limit history size
         if (this.history.length > this.MAX_HISTORY) {
             this.history.shift();
             this.historyIndex--;
         }
-        
+
         // Update undo/redo button states
         this.updateHistoryButtons();
     }
@@ -918,12 +918,12 @@ class CharacterSheet {
     private updateHistoryButtons(): void {
         const undoBtn = document.getElementById('undoBtn');
         const redoBtn = document.getElementById('redoBtn');
-        
+
         if (undoBtn) {
             undoBtn.classList.toggle('disabled', this.historyIndex <= 0);
             (undoBtn as HTMLButtonElement).disabled = this.historyIndex <= 0;
         }
-        
+
         if (redoBtn) {
             redoBtn.classList.toggle('disabled', this.historyIndex >= this.history.length - 1);
             (redoBtn as HTMLButtonElement).disabled = this.historyIndex >= this.history.length - 1;
@@ -944,7 +944,7 @@ class CharacterSheet {
     private setupAbilityScoreListeners(): void {
         const abilities: AbilityName[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
         const sources: AbilitySource[] = ['base', 'race', 'asi', 'feat', 'magic'];
-        
+
         abilities.forEach(ability => {
             sources.forEach(source => {
                 // Capitalize first letter for field name (e.g., 'base' -> 'Base')
@@ -958,7 +958,7 @@ class CharacterSheet {
                     this.debouncedPushHistory();
                 });
             });
-            
+
             // Modifier listeners (editable but auto-calculated)
             this.addInputListener(`${ability}Mod`, (v) => {
                 this.data.abilityModifiers[ability] = v;
@@ -972,28 +972,28 @@ class CharacterSheet {
         // Populate all fields with current data
         const characterName = document.getElementById('characterName') as HTMLInputElement;
         if (characterName) characterName.value = this.data.characterName;
-        
+
         const playerName = document.getElementById('playerName') as HTMLInputElement;
         if (playerName) playerName.value = this.data.playerName;
-        
+
         const race = document.getElementById('race') as HTMLInputElement;
         if (race) race.value = this.data.race;
-        
+
         const classEl = document.getElementById('class') as HTMLInputElement;
         if (classEl) classEl.value = this.data.class;
-        
+
         const level = document.getElementById('level') as HTMLInputElement;
         if (level) level.value = this.data.level.toString();
-        
+
         const background = document.getElementById('background') as HTMLInputElement;
         if (background) background.value = this.data.background;
-        
+
         const subclass = document.getElementById('subclass') as HTMLInputElement;
         if (subclass) subclass.value = this.data.subclass || '';
-        
+
         const alignment = document.getElementById('alignment') as HTMLInputElement;
         if (alignment) alignment.value = this.data.alignment;
-        
+
         const experience = document.getElementById('experience') as HTMLInputElement;
         if (experience) experience.value = this.data.experience.toString();
 
@@ -1001,7 +1001,7 @@ class CharacterSheet {
         const abilities: AbilityName[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
         abilities.forEach(ability => {
             const scores = this.data.abilityScores[ability];
-            
+
             // Populate individual fields
             const baseEl = document.getElementById(`${ability}Base`) as HTMLInputElement;
             if (baseEl) baseEl.value = scores.base.toString();
@@ -1013,7 +1013,7 @@ class CharacterSheet {
             if (featEl) featEl.value = scores.feat.toString();
             const magicEl = document.getElementById(`${ability}Magic`) as HTMLInputElement;
             if (magicEl) magicEl.value = scores.magic.toString();
-            
+
             // Calculate and display total
             this.updateAbilityScore(ability);
         });
@@ -1178,42 +1178,42 @@ class CharacterSheet {
 
     private saveData(): void {
         this.showSaveStatus('saving', 'Saving...');
-        
+
         try {
             // Ensure all proficiency fields are captured from DOM before saving
             const armorProficiencies = document.getElementById('armorProficiencies') as HTMLTextAreaElement;
             if (armorProficiencies) {
                 this.data.armorProficiencies = armorProficiencies.value;
             }
-            
+
             const weaponProficiencies = document.getElementById('weaponProficiencies') as HTMLTextAreaElement;
             if (weaponProficiencies) this.data.weaponProficiencies = weaponProficiencies.value;
-            
+
             const toolProficiencies = document.getElementById('toolProficiencies') as HTMLTextAreaElement;
             if (toolProficiencies) this.data.toolProficiencies = toolProficiencies.value;
-            
+
             const languages = document.getElementById('languages') as HTMLTextAreaElement;
             if (languages) this.data.languages = languages.value;
-            
+
             const equipment = document.getElementById('equipment') as HTMLTextAreaElement;
             if (equipment) this.data.equipment = equipment.value;
-            
+
             // Capture current layout state from DOM before saving
             const skillsSection = document.getElementById('skillsSection');
             const weaponsSection = document.getElementById('weaponsSection');
             const proficienciesSection = document.getElementById('proficienciesSection');
             const equipmentSection = document.getElementById('equipmentSection');
-            
+
             const currentLayout: LayoutData = {
                 skillsWidth: skillsSection ? skillsSection.offsetWidth : 250,
                 weaponsWidth: weaponsSection ? weaponsSection.offsetWidth : 0,
                 proficienciesWidth: proficienciesSection ? proficienciesSection.offsetWidth : 0,
                 equipmentWidth: equipmentSection ? equipmentSection.offsetWidth : 0
             };
-            
+
             // Update layout manager with current state
             this.layoutManager.setLayout(currentLayout);
-            
+
             // Save to file using File System Access API
             this.saveToFile();
         } catch (e) {
@@ -1229,11 +1229,11 @@ class CharacterSheet {
                 'character-definition': this.data,
                 'sheet-layout': this.layoutManager.getLayout()
             };
-            
+
             const dataToSave = JSON.stringify(fileData, null, 2);
             const blob = new Blob([dataToSave], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
-            
+
             // Check if File System Access API is supported
             if ('showSaveFilePicker' in window) {
                 try {
@@ -1244,11 +1244,11 @@ class CharacterSheet {
                             accept: { 'application/json': ['.json'] }
                         }]
                     });
-                    
+
                     const writable = await fileHandle.createWritable();
                     await writable.write(dataToSave);
                     await writable.close();
-                    
+
                     this.showSaveStatus('saved', 'Saved to file');
                     setTimeout(() => {
                         const statusEl = document.getElementById('saveStatus');
@@ -1265,7 +1265,7 @@ class CharacterSheet {
                     }
                 }
             }
-            
+
             // Fallback: Download file
             const a = document.createElement('a');
             a.href = url;
@@ -1274,7 +1274,7 @@ class CharacterSheet {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            
+
             this.showSaveStatus('saved', 'Downloaded');
             setTimeout(() => {
                 const statusEl = document.getElementById('saveStatus');
@@ -1294,7 +1294,7 @@ class CharacterSheet {
         if (!skillsList) return;
 
         skillsList.innerHTML = '';
-        
+
         this.data.skills.forEach(skill => {
             const row = this.createSkillRow(skill);
             skillsList.appendChild(row);
@@ -1474,7 +1474,7 @@ class CharacterSheet {
 
     private async loadFromFile(): Promise<void> {
         this.showSaveStatus('saving', 'Loading...');
-        
+
         try {
             // Check if File System Access API is supported
             if ('showOpenFilePicker' in window) {
@@ -1485,18 +1485,18 @@ class CharacterSheet {
                             accept: { 'application/json': ['.json'] }
                         }]
                     });
-                    
+
                     const file = await fileHandle.getFile();
                     const text = await file.text();
-                    
+
                     try {
                         const fileData = JSON.parse(text);
                         console.log('Loaded data:', fileData);
-                        
+
                         // Handle both old format (direct data) and new format (with character-definition and sheet-layout)
                         let characterData: any;
                         let layoutData: LayoutData | undefined;
-                        
+
                         if (fileData['character-definition'] && fileData['sheet-layout']) {
                             // New format
                             characterData = fileData['character-definition'];
@@ -1505,12 +1505,12 @@ class CharacterSheet {
                             // Old format - just character data
                             characterData = fileData;
                         }
-                        
+
                         // Apply layout if available
                         if (layoutData) {
                             this.layoutManager.setLayout(layoutData);
                         }
-                        
+
                         // Validate and merge with defaults
                         this.data = this.validateAndMigrateData(characterData);
                         // Reset history after loading
@@ -1548,7 +1548,7 @@ class CharacterSheet {
                     return;
                 }
             }
-            
+
             // Fallback: Use file input
             const input = document.createElement('input');
             input.type = 'file';
@@ -1560,7 +1560,7 @@ class CharacterSheet {
                     this.showSaveStatus('error', 'No file selected');
                     return;
                 }
-                
+
                 const reader = new FileReader();
                 reader.onerror = () => {
                     console.error('FileReader error');
@@ -1574,11 +1574,11 @@ class CharacterSheet {
                         }
                         const fileData = JSON.parse(text);
                         console.log('Loaded data:', fileData);
-                        
+
                         // Handle both old format (direct data) and new format (with character-definition and sheet-layout)
                         let characterData: any;
                         let layoutData: LayoutData | undefined;
-                        
+
                         if (fileData['character-definition'] && fileData['sheet-layout']) {
                             // New format
                             characterData = fileData['character-definition'];
@@ -1587,12 +1587,12 @@ class CharacterSheet {
                             // Old format - just character data
                             characterData = fileData;
                         }
-                        
+
                         // Apply layout if available
                         if (layoutData) {
                             this.layoutManager.setLayout(layoutData);
                         }
-                        
+
                         // Validate and merge with defaults
                         this.data = this.validateAndMigrateData(characterData);
                         // Reset history after loading
@@ -1736,11 +1736,59 @@ class CharacterSheet {
     }
 }
 
+// Simple Accordion Function
+function initializeAccordions() {
+    const groups = document.querySelectorAll('.content-group');
+
+    groups.forEach(group => {
+        const header = group.querySelector('.accordion-header') as HTMLElement;
+        if (!header) return;
+
+        header.addEventListener('click', () => {
+            group.classList.toggle('collapsed');
+
+            // Save state to localStorage
+            const groupName = group.getAttribute('data-group');
+            if (groupName) {
+                const isCollapsed = group.classList.contains('collapsed');
+                localStorage.setItem(`accordion-${groupName}`, isCollapsed.toString());
+            }
+        });
+
+        // Load saved state
+        const groupName = group.getAttribute('data-group');
+        if (groupName) {
+            const savedState = localStorage.getItem(`accordion-${groupName}`);
+            if (savedState === 'true') {
+                group.classList.add('collapsed');
+            }
+        }
+    });
+
+    // On mobile, collapse some sections by default (first time only)
+    if (window.innerWidth <= 768) {
+        const sectionsToCollapse = ['backstory-appearance', 'equipment-coins'];
+
+        sectionsToCollapse.forEach(sectionName => {
+            // Only if not previously set by user
+            if (localStorage.getItem(`accordion-${sectionName}`) === null) {
+                const section = document.querySelector(`[data-group="${sectionName}"]`);
+                if (section) {
+                    section.classList.add('collapsed');
+                    localStorage.setItem(`accordion-${sectionName}`, 'true');
+                }
+            }
+        });
+    }
+}
+
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         new CharacterSheet();
+        initializeAccordions();
     });
 } else {
     new CharacterSheet();
+    initializeAccordions();
 }
