@@ -1,0 +1,17 @@
+{
+  "name": "dnd-character-sheet",
+  "version": "1.0.0",
+  "description": "D&D 5e Character Sheet with Google Drive integration",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "dev": "tsc --watch",
+    "serve": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "keywords": ["dnd", "character-sheet", "dungeons-and-dragons"],
+  "author": "",
+  "license": "MIT"
+}

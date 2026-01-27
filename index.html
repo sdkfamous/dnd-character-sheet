@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D 5e Character Sheet</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>D&D 5e Character Sheet</h1>
+            <div class="save-status" id="saveStatus"></div>
+        </header>
+
+        <main>
+            <!-- Basic Info Section -->
+            <section class="character-info">
+                <h2>Character Information</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label for="characterName">Character Name</label>
+                        <input type="text" id="characterName" placeholder="Enter name">
+                    </div>
+                    <div class="info-item">
+                        <label for="playerName">Player Name</label>
+                        <input type="text" id="playerName" placeholder="Enter player name">
+                    </div>
+                    <div class="info-item">
+                        <label for="race">Race</label>
+                        <input type="text" id="race" placeholder="e.g., Human">
+                    </div>
+                    <div class="info-item">
+                        <label for="class">Class</label>
+                        <input type="text" id="class" value="Fighter (Eldritch Knight)" readonly>
+                    </div>
+                    <div class="info-item">
+                        <label for="level">Level</label>
+                        <input type="number" id="level" value="5" min="1" max="20">
+                    </div>
+                    <div class="info-item">
+                        <label for="background">Background</label>
+                        <input type="text" id="background" placeholder="Enter background">
+                    </div>
+                    <div class="info-item">
+                        <label for="alignment">Alignment</label>
+                        <input type="text" id="alignment" placeholder="e.g., Lawful Good">
+                    </div>
+                    <div class="info-item">
+                        <label for="experience">Experience Points</label>
+                        <input type="number" id="experience" value="0" min="0">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ability Scores Section -->
+            <section class="ability-scores">
+                <h2>Ability Scores</h2>
+                <div class="scores-grid">
+                    <div class="score-card" data-ability="str">
+                        <h3>Strength</h3>
+                        <input type="number" class="score-input" id="strScore" value="16" min="1" max="30">
+                        <div class="modifier" id="strMod">+3</div>
+                        <div class="save-proficiency">
+                            <input type="checkbox" id="strSaveProf">
+                            <label for="strSaveProf">Saving Throw</label>
+                        </div>
+                    </div>
+                    <div class="score-card" data-ability="dex">
+                        <h3>Dexterity</h3>
+                        <input type="number" class="score-input" id="dexScore" value="12" min="1" max="30">
+                        <div class="modifier" id="dexMod">+1</div>
+                        <div class="save-proficiency">
+                            <input type="checkbox" id="dexSaveProf">
+                            <label for="dexSaveProf">Saving Throw</label>
+                        </div>
+                    </div>
+                    <div class="score-card" data-ability="con">
+                        <h3>Constitution</h3>
+                        <input type="number" class="score-input" id="conScore" value="16" min="1" max="30">
+                        <div class="modifier" id="conMod">+3</div>
+                        <div class="save-proficiency">
+                            <input type="checkbox" id="conSaveProf" checked>
+                            <label for="conSaveProf">Saving Throw</label>
+                        </div>
+                    </div>
+                    <div class="score-card" data-ability="int">
+                        <h3>Intelligence</h3>
+                        <input type="number" class="score-input" id="intScore" value="13" min="1" max="30">
+                        <div class="modifier" id="intMod">+1</div>
+                        <div class="save-proficiency">
+                            <input type="checkbox" id="intSaveProf">
+                            <label for="intSaveProf">Saving Throw</label>
+                        </div>
+                    </div>
+                    <div class="score-card" data-ability="wis">
+                        <h3>Wisdom</h3>
+                        <input type="number" class="score-input" id="wisScore" value="10" min="1" max="30">
+                        <div class="modifier" id="wisMod">+0</div>
+                        <div class="save-proficiency">
+                            <input type="checkbox" id="wisSaveProf">
+                            <label for="wisSaveProf">Saving Throw</label>
+                        </div>
+                    </div>
+                    <div class="score-card" data-ability="cha">
+                        <h3>Charisma</h3>
+                        <input type="number" class="score-input" id="chaScore" value="8" min="1" max="30">
+                        <div class="modifier" id="chaMod">-1</div>
+                        <div class="save-proficiency">
+                            <input type="checkbox" id="chaSaveProf">
+                            <label for="chaSaveProf">Saving Throw</label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Combat Stats Section -->
+            <section class="combat-stats">
+                <h2>Combat Statistics</h2>
+                <div class="combat-grid">
+                    <div class="stat-item">
+                        <label for="armorClass">Armor Class</label>
+                        <input type="number" id="armorClass" value="18" min="0">
+                    </div>
+                    <div class="stat-item">
+                        <label for="initiative">Initiative</label>
+                        <input type="number" id="initiative" value="1" min="-10" max="20">
+                    </div>
+                    <div class="stat-item">
+                        <label for="speed">Speed</label>
+                        <input type="number" id="speed" value="30" min="0">
+                    </div>
+                    <div class="stat-item">
+                        <label for="hitPointsMax">Hit Points Maximum</label>
+                        <input type="number" id="hitPointsMax" value="44" min="1">
+                    </div>
+                    <div class="stat-item">
+                        <label for="hitPointsCurrent">Current Hit Points</label>
+                        <input type="number" id="hitPointsCurrent" value="44" min="0">
+                    </div>
+                    <div class="stat-item">
+                        <label for="hitPointsTemp">Temporary Hit Points</label>
+                        <input type="number" id="hitPointsTemp" value="0" min="0">
+                    </div>
+                    <div class="stat-item">
+                        <label for="hitDice">Hit Dice</label>
+                        <input type="text" id="hitDice" value="5d10" readonly>
+                    </div>
+                    <div class="stat-item">
+                        <label for="deathSavesSuccess">Death Saves (Success)</label>
+                        <div class="death-saves">
+                            <input type="checkbox" id="deathSave1">
+                            <input type="checkbox" id="deathSave2">
+                            <input type="checkbox" id="deathSave3">
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <label for="deathSavesFailure">Death Saves (Failure)</label>
+                        <div class="death-saves">
+                            <input type="checkbox" id="deathFail1">
+                            <input type="checkbox" id="deathFail2">
+                            <input type="checkbox" id="deathFail3">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Skills Section -->
+            <section class="skills">
+                <h2>Skills</h2>
+                <div class="skills-grid">
+                    <div class="skill-item" data-skill="athletics" data-ability="str">
+                        <input type="checkbox" id="skillAthletics">
+                        <label for="skillAthletics">Athletics (STR)</label>
+                        <span class="skill-modifier" id="skillAthleticsMod">+3</span>
+                    </div>
+                    <div class="skill-item" data-skill="acrobatics" data-ability="dex">
+                        <input type="checkbox" id="skillAcrobatics">
+                        <label for="skillAcrobatics">Acrobatics (DEX)</label>
+                        <span class="skill-modifier" id="skillAcrobaticsMod">+1</span>
+                    </div>
+                    <div class="skill-item" data-skill="sleight" data-ability="dex">
+                        <input type="checkbox" id="skillSleight">
+                        <label for="skillSleight">Sleight of Hand (DEX)</label>
+                        <span class="skill-modifier" id="skillSleightMod">+1</span>
+                    </div>
+                    <div class="skill-item" data-skill="stealth" data-ability="dex">
+                        <input type="checkbox" id="skillStealth">
+                        <label for="skillStealth">Stealth (DEX)</label>
+                        <span class="skill-modifier" id="skillStealthMod">+1</span>
+                    </div>
+                    <div class="skill-item" data-skill="arcana" data-ability="int">
+                        <input type="checkbox" id="skillArcana">
+                        <label for="skillArcana">Arcana (INT)</label>
+                        <span class="skill-modifier" id="skillArcanaMod">+1</span>
+                    </div>
+                    <div class="skill-item" data-skill="history" data-ability="int">
+                        <input type="checkbox" id="skillHistory">
+                        <label for="skillHistory">History (INT)</label>
+                        <span class="skill-modifier" id="skillHistoryMod">+1</span>
+                    </div>
+                    <div class="skill-item" data-skill="investigation" data-ability="int">
+                        <input type="checkbox" id="skillInvestigation">
+                        <label for="skillInvestigation">Investigation (INT)</label>
+                        <span class="skill-modifier" id="skillInvestigationMod">+1</span>
+                    </div>
+                    <div class="skill-item" data-skill="nature" data-ability="int">
+                        <input type="checkbox" id="skillNature">
+                        <label for="skillNature">Nature (INT)</label>
+                        <span class="skill-modifier" id="skillNatureMod">+1</span>
+                    </div>
+                    <div class="skill-item" data-skill="religion" data-ability="int">
+                        <input type="checkbox" id="skillReligion">
+                        <label for="skillReligion">Religion (INT)</label>
+                        <span class="skill-modifier" id="skillReligionMod">+1</span>
+                    </div>
+                    <div class="skill-item" data-skill="animal" data-ability="wis">
+                        <input type="checkbox" id="skillAnimal">
+                        <label for="skillAnimal">Animal Handling (WIS)</label>
+                        <span class="skill-modifier" id="skillAnimalMod">+0</span>
+                    </div>
+                    <div class="skill-item" data-skill="insight" data-ability="wis">
+                        <input type="checkbox" id="skillInsight">
+                        <label for="skillInsight">Insight (WIS)</label>
+                        <span class="skill-modifier" id="skillInsightMod">+0</span>
+                    </div>
+                    <div class="skill-item" data-skill="medicine" data-ability="wis">
+                        <input type="checkbox" id="skillMedicine">
+                        <label for="skillMedicine">Medicine (WIS)</label>
+                        <span class="skill-modifier" id="skillMedicineMod">+0</span>
+                    </div>
+                    <div class="skill-item" data-skill="perception" data-ability="wis">
+                        <input type="checkbox" id="skillPerception">
+                        <label for="skillPerception">Perception (WIS)</label>
+                        <span class="skill-modifier" id="skillPerceptionMod">+0</span>
+                    </div>
+                    <div class="skill-item" data-skill="survival" data-ability="wis">
+                        <input type="checkbox" id="skillSurvival">
+                        <label for="skillSurvival">Survival (WIS)</label>
+                        <span class="skill-modifier" id="skillSurvivalMod">+0</span>
+                    </div>
+                    <div class="skill-item" data-skill="deception" data-ability="cha">
+                        <input type="checkbox" id="skillDeception">
+                        <label for="skillDeception">Deception (CHA)</label>
+                        <span class="skill-modifier" id="skillDeceptionMod">-1</span>
+                    </div>
+                    <div class="skill-item" data-skill="intimidation" data-ability="cha">
+                        <input type="checkbox" id="skillIntimidation">
+                        <label for="skillIntimidation">Intimidation (CHA)</label>
+                        <span class="skill-modifier" id="skillIntimidationMod">-1</span>
+                    </div>
+                    <div class="skill-item" data-skill="performance" data-ability="cha">
+                        <input type="checkbox" id="skillPerformance">
+                        <label for="skillPerformance">Performance (CHA)</label>
+                        <span class="skill-modifier" id="skillPerformanceMod">-1</span>
+                    </div>
+                    <div class="skill-item" data-skill="persuasion" data-ability="cha">
+                        <input type="checkbox" id="skillPersuasion">
+                        <label for="skillPersuasion">Persuasion (CHA)</label>
+                        <span class="skill-modifier" id="skillPersuasionMod">-1</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features & Traits Section -->
+            <section class="features">
+                <h2>Features & Traits</h2>
+                <textarea id="features" rows="10" placeholder="Enter features, traits, and other abilities..."></textarea>
+            </section>
+
+            <!-- Spells Section -->
+            <section class="spells">
+                <h2>Spells</h2>
+                <div class="spell-info">
+                    <div class="stat-item">
+                        <label for="spellcastingAbility">Spellcasting Ability</label>
+                        <input type="text" id="spellcastingAbility" value="Intelligence" readonly>
+                    </div>
+                    <div class="stat-item">
+                        <label for="spellSaveDC">Spell Save DC</label>
+                        <input type="number" id="spellSaveDC" value="13" readonly>
+                    </div>
+                    <div class="stat-item">
+                        <label for="spellAttackBonus">Spell Attack Bonus</label>
+                        <input type="number" id="spellAttackBonus" value="+4" readonly>
+                    </div>
+                </div>
+                <div class="spell-slots">
+                    <h3>Spell Slots</h3>
+                    <div class="spell-levels">
+                        <div class="spell-level">
+                            <label>1st Level</label>
+                            <input type="number" id="spellSlots1" value="2" min="0" max="20">
+                            <span>/</span>
+                            <input type="number" id="spellSlots1Max" value="2" min="0" max="20" readonly>
+                        </div>
+                        <div class="spell-level">
+                            <label>2nd Level</label>
+                            <input type="number" id="spellSlots2" value="0" min="0" max="20">
+                            <span>/</span>
+                            <input type="number" id="spellSlots2Max" value="0" min="0" max="20" readonly>
+                        </div>
+                    </div>
+                </div>
+                <div class="spell-list">
+                    <h3>Known Spells</h3>
+                    <textarea id="knownSpells" rows="8" placeholder="List your known spells..."></textarea>
+                </div>
+            </section>
+
+            <!-- Equipment Section -->
+            <section class="equipment">
+                <h2>Equipment</h2>
+                <textarea id="equipment" rows="10" placeholder="List your equipment, weapons, and armor..."></textarea>
+            </section>
+
+            <!-- Notes Section -->
+            <section class="notes">
+                <h2>Notes</h2>
+                <textarea id="notes" rows="10" placeholder="Additional notes..."></textarea>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="dist/character-sheet.js"></script>
+</body>
+</html>
