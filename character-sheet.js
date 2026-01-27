@@ -1503,13 +1503,55 @@ class CharacterSheet {
         }
     }
 }
+// Simple Accordion Function
+function initializeAccordions() {
+    const groups = document.querySelectorAll('.content-group');
+    groups.forEach(group => {
+        const header = group.querySelector('.accordion-header');
+        if (!header)
+            return;
+        header.addEventListener('click', () => {
+            group.classList.toggle('collapsed');
+            // Save state to localStorage
+            const groupName = group.getAttribute('data-group');
+            if (groupName) {
+                const isCollapsed = group.classList.contains('collapsed');
+                localStorage.setItem(`accordion-${groupName}`, isCollapsed.toString());
+            }
+        });
+        // Load saved state
+        const groupName = group.getAttribute('data-group');
+        if (groupName) {
+            const savedState = localStorage.getItem(`accordion-${groupName}`);
+            if (savedState === 'true') {
+                group.classList.add('collapsed');
+            }
+        }
+    });
+    // On mobile, collapse some sections by default (first time only)
+    if (window.innerWidth <= 768) {
+        const sectionsToCollapse = ['backstory-appearance', 'equipment-coins'];
+        sectionsToCollapse.forEach(sectionName => {
+            // Only if not previously set by user
+            if (localStorage.getItem(`accordion-${sectionName}`) === null) {
+                const section = document.querySelector(`[data-group="${sectionName}"]`);
+                if (section) {
+                    section.classList.add('collapsed');
+                    localStorage.setItem(`accordion-${sectionName}`, 'true');
+                }
+            }
+        });
+    }
+}
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         new CharacterSheet();
+        initializeAccordions();
     });
 }
 else {
     new CharacterSheet();
+    initializeAccordions();
 }
 //# sourceMappingURL=character-sheet.js.map

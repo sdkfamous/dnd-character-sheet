@@ -638,14 +638,16 @@ button:focus-visible {
     text-align: center;
 }
 
-.hp-current, .hp-temp {
+.hp-current,
+.hp-temp {
     display: flex;
     align-items: center;
     gap: 4px;
     margin-top: 4px;
 }
 
-.hp-current span, .hp-temp span {
+.hp-current span,
+.hp-temp span {
     font-size: 8pt;
     text-transform: uppercase;
     min-width: 80px;
@@ -1199,5 +1201,83 @@ textarea:focus {
 
     .equipment-coins-section {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
+   ACCORDION STYLES
+   ============================================ */
+
+/* Content Group Container */
+.content-group {
+    margin-bottom: 20px;
+    border: 2px solid #000;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Accordion Header (clickable) */
+.accordion-header {
+    background: #f0f0f0;
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 10pt;
+    border-bottom: 2px solid #000;
+    transition: background 0.2s;
+}
+
+.accordion-header:hover {
+    background: #e0e0e0;
+}
+
+.accordion-header:active {
+    background: #d0d0d0;
+}
+
+/* Accordion Icon */
+.accordion-icon {
+    font-size: 14pt;
+    transition: transform 0.3s ease;
+    font-weight: bold;
+}
+
+/* Rotated when collapsed */
+.content-group.collapsed .accordion-icon {
+    transform: rotate(-90deg);
+}
+
+/* Accordion Content */
+.accordion-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+/* Collapsed state */
+.content-group.collapsed .accordion-content {
+    max-height: 0 !important;
+}
+
+/* Expanded state - set large max-height */
+.content-group:not(.collapsed) .accordion-content {
+    max-height: 10000px;
+}
+
+/* Accessibility - focus state */
+.accordion-header:focus {
+    outline: 2px solid #0066cc;
+    outline-offset: 2px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .accordion-header {
+        padding: 16px;
+        font-size: 11pt;
     }
 }
