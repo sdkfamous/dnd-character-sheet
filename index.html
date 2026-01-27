@@ -10,6 +10,8 @@
     <div class="save-controls">
         <button type="button" id="saveBtn" class="save-button">Save</button>
         <button type="button" id="loadBtn" class="save-button">Load</button>
+        <button type="button" id="undoBtn" class="save-button" title="Undo (Ctrl+Z)">Undo</button>
+        <button type="button" id="redoBtn" class="save-button" title="Redo (Ctrl+Y)">Redo</button>
         <div class="save-status" id="saveStatus"></div>
     </div>
     
@@ -20,48 +22,48 @@
             <!-- Most Left Box: Name, Species, Class, Background, Subclass -->
             <div class="top-box top-box-1">
                 <div class="top-field">
-                    <label>NAME</label>
-                    <input type="text" id="characterName" class="top-input">
+                    <label for="characterName">NAME</label>
+                    <input type="text" id="characterName" class="top-input" aria-label="Character name">
                 </div>
                 <div class="top-field">
-                    <label>SPECIES</label>
-                    <input type="text" id="race" class="top-input">
+                    <label for="race">SPECIES</label>
+                    <input type="text" id="race" class="top-input" aria-label="Character species">
                 </div>
                 <div class="top-field">
-                    <label>CLASS</label>
-                    <input type="text" id="class" class="top-input">
+                    <label for="class">CLASS</label>
+                    <input type="text" id="class" class="top-input" aria-label="Character class">
                 </div>
                 <div class="top-field">
-                    <label>BACKGROUND</label>
-                    <input type="text" id="background" class="top-input">
+                    <label for="background">BACKGROUND</label>
+                    <input type="text" id="background" class="top-input" aria-label="Character background">
                 </div>
                 <div class="top-field">
-                    <label>SUBCLASS</label>
-                    <input type="text" id="subclass" class="top-input">
+                    <label for="subclass">SUBCLASS</label>
+                    <input type="text" id="subclass" class="top-input" aria-label="Character subclass">
                 </div>
             </div>
 
             <!-- Next Left Box: Level, XP -->
             <div class="top-box top-box-2">
                 <div class="top-field">
-                    <label>LEVEL</label>
-                    <input type="number" id="level" class="top-input" min="1" max="20">
+                    <label for="level">LEVEL</label>
+                    <input type="number" id="level" class="top-input" min="1" max="20" aria-label="Character level">
                 </div>
                 <div class="top-field">
-                    <label>XP</label>
-                    <input type="number" id="experience" class="top-input" min="0">
+                    <label for="experience">XP</label>
+                    <input type="number" id="experience" class="top-input" min="0" aria-label="Experience points">
                 </div>
             </div>
 
             <!-- Next Left Box: Armour Class, Shield (toggle) -->
             <div class="top-box top-box-3">
                 <div class="top-field">
-                    <label>ARMOUR CLASS</label>
-                    <input type="number" id="armorClass" class="top-input" min="0">
+                    <label for="armorClass">ARMOUR CLASS</label>
+                    <input type="number" id="armorClass" class="top-input" min="0" aria-label="Armor class">
                 </div>
                 <div class="top-field">
-                    <label>SHIELD</label>
-                    <input type="checkbox" id="shield" class="top-checkbox">
+                    <label for="shield">SHIELD</label>
+                    <input type="checkbox" id="shield" class="top-checkbox" aria-label="Shield equipped">
                 </div>
             </div>
 
@@ -71,16 +73,16 @@
                     <div class="group-label">HIT POINTS</div>
                     <div class="hp-fields">
                         <div class="hp-field">
-                            <label>CURRENT</label>
-                            <input type="number" id="hitPointsCurrent" class="hp-input-small" min="0">
+                            <label for="hitPointsCurrent">CURRENT</label>
+                            <input type="number" id="hitPointsCurrent" class="hp-input-small" min="0" aria-label="Current hit points">
                         </div>
                         <div class="hp-field">
-                            <label>MAX</label>
-                            <input type="number" id="hitPointsMax" class="hp-input-small" min="0">
+                            <label for="hitPointsMax">MAX</label>
+                            <input type="number" id="hitPointsMax" class="hp-input-small" min="0" aria-label="Maximum hit points">
                         </div>
                         <div class="hp-field">
-                            <label>TEMP</label>
-                            <input type="number" id="hitPointsTemp" class="hp-input-small" min="0">
+                            <label for="hitPointsTemp">TEMP</label>
+                            <input type="number" id="hitPointsTemp" class="hp-input-small" min="0" aria-label="Temporary hit points">
                         </div>
                     </div>
                 </div>
@@ -88,12 +90,12 @@
                     <div class="group-label">HIT DICE</div>
                     <div class="hitdice-fields">
                         <div class="hitdice-field">
-                            <label>SPENT</label>
-                            <input type="number" id="hitDiceSpent" class="hp-input-small" min="0">
+                            <label for="hitDiceSpent">SPENT</label>
+                            <input type="number" id="hitDiceSpent" class="hp-input-small" min="0" aria-label="Hit dice spent">
                         </div>
                         <div class="hitdice-field">
-                            <label>MAX</label>
-                            <input type="text" id="hitDice" class="hp-input-small">
+                            <label for="hitDice">MAX</label>
+                            <input type="text" id="hitDice" class="hp-input-small" aria-label="Hit dice maximum">
                         </div>
                     </div>
                 </div>
@@ -127,31 +129,32 @@
                 <div class="stat-label">STRENGTH</div>
                 <div class="stat-breakdown">
                     <div class="stat-field-small">
-                        <label>Base</label>
-                        <input type="number" id="strBase" class="stat-input-small" min="1" max="30">
+                        <label for="strBase">Base</label>
+                        <input type="number" id="strBase" class="stat-input-small" min="1" max="30" aria-label="Strength base score">
                     </div>
                     <div class="stat-field-small">
-                        <label>Race</label>
-                        <input type="number" id="strRace" class="stat-input-small" min="-5" max="10">
+                        <label for="strRace">Species</label>
+                        <input type="number" id="strRace" class="stat-input-small" min="-5" max="10" aria-label="Strength species bonus">
                     </div>
                     <div class="stat-field-small">
-                        <label>ASI</label>
-                        <input type="number" id="strASI" class="stat-input-small" min="0" max="20">
+                        <label for="strASI">ASI</label>
+                        <input type="number" id="strASI" class="stat-input-small" min="0" max="20" aria-label="Strength ability score improvement">
                     </div>
                     <div class="stat-field-small">
-                        <label>Feat</label>
-                        <input type="number" id="strFeat" class="stat-input-small" min="0" max="10">
+                        <label for="strFeat">Feat</label>
+                        <input type="number" id="strFeat" class="stat-input-small" min="0" max="10" aria-label="Strength feat bonus">
                     </div>
                     <div class="stat-field-small">
-                        <label>Magic</label>
-                        <input type="number" id="strMagic" class="stat-input-small" min="0" max="10">
+                        <label for="strMagic">Magic</label>
+                        <input type="number" id="strMagic" class="stat-input-small" min="0" max="10" aria-label="Strength magic item bonus">
                     </div>
                 </div>
                 <div class="stat-total-box">
-                    <label>Total</label>
-                    <div class="stat-total" id="strTotal">10</div>
+                    <label for="strTotal">Total</label>
+                    <div class="stat-total" id="strTotal" role="textbox" aria-label="Strength total score">10</div>
                 </div>
-                <input type="text" id="strMod" class="stat-modifier">
+                <label for="strMod" class="sr-only">Strength modifier</label>
+                <input type="text" id="strMod" class="stat-modifier" aria-label="Strength modifier">
             </div>
             <div class="stat-box">
                 <div class="stat-label">CONSTITUTION</div>
@@ -161,7 +164,7 @@
                         <input type="number" id="conBase" class="stat-input-small" min="1" max="30">
                     </div>
                     <div class="stat-field-small">
-                        <label>Race</label>
+                        <label>Species</label>
                         <input type="number" id="conRace" class="stat-input-small" min="-5" max="10">
                     </div>
                     <div class="stat-field-small">
@@ -191,7 +194,7 @@
                         <input type="number" id="dexBase" class="stat-input-small" min="1" max="30">
                     </div>
                     <div class="stat-field-small">
-                        <label>Race</label>
+                        <label>Species</label>
                         <input type="number" id="dexRace" class="stat-input-small" min="-5" max="10">
                     </div>
                     <div class="stat-field-small">
@@ -221,7 +224,7 @@
                         <input type="number" id="intBase" class="stat-input-small" min="1" max="30">
                     </div>
                     <div class="stat-field-small">
-                        <label>Race</label>
+                        <label>Species</label>
                         <input type="number" id="intRace" class="stat-input-small" min="-5" max="10">
                     </div>
                     <div class="stat-field-small">
@@ -251,7 +254,7 @@
                         <input type="number" id="wisBase" class="stat-input-small" min="1" max="30">
                     </div>
                     <div class="stat-field-small">
-                        <label>Race</label>
+                        <label>Species</label>
                         <input type="number" id="wisRace" class="stat-input-small" min="-5" max="10">
                     </div>
                     <div class="stat-field-small">
@@ -281,7 +284,7 @@
                         <input type="number" id="chaBase" class="stat-input-small" min="1" max="30">
                     </div>
                     <div class="stat-field-small">
-                        <label>Race</label>
+                        <label>Species</label>
                         <input type="number" id="chaRace" class="stat-input-small" min="-5" max="10">
                     </div>
                     <div class="stat-field-small">
@@ -308,28 +311,28 @@
         <!-- Row 3: Proficiency Bonus, Initiative, Speed, Size, Passive Perception, Heroic Inspiration -->
         <div class="row-3">
             <div class="row3-box">
-                <label>PROFICIENCY BONUS</label>
-                <input type="text" id="proficiencyBonus" class="row3-input">
+                <label for="proficiencyBonus">PROFICIENCY BONUS</label>
+                <input type="text" id="proficiencyBonus" class="row3-input" aria-label="Proficiency bonus">
             </div>
             <div class="row3-box">
-                <label>INITIATIVE</label>
-                    <input type="number" id="initiative" class="row3-input" min="-10" max="20">
+                <label for="initiative">INITIATIVE</label>
+                <input type="number" id="initiative" class="row3-input" min="-10" max="20" aria-label="Initiative modifier">
             </div>
             <div class="row3-box">
-                <label>SPEED</label>
-                <input type="number" id="speed" class="row3-input" min="0">
+                <label for="speed">SPEED</label>
+                <input type="number" id="speed" class="row3-input" min="0" aria-label="Movement speed">
             </div>
             <div class="row3-box">
-                <label>SIZE</label>
-                <input type="text" id="size" class="row3-input">
+                <label for="size">SIZE</label>
+                <input type="text" id="size" class="row3-input" aria-label="Character size">
             </div>
             <div class="row3-box">
-                <label>PASSIVE PERCEPTION</label>
-                <input type="number" id="passivePerception" class="row3-input">
+                <label for="passivePerception">PASSIVE PERCEPTION</label>
+                <input type="number" id="passivePerception" class="row3-input" aria-label="Passive perception">
             </div>
             <div class="row3-box">
-                <label>HEROIC INSPIRATION</label>
-                <input type="checkbox" id="heroicInspiration" class="row3-checkbox">
+                <label for="heroicInspiration">HEROIC INSPIRATION</label>
+                <input type="checkbox" id="heroicInspiration" class="row3-checkbox" aria-label="Heroic inspiration">
             </div>
         </div>
 
@@ -341,7 +344,7 @@
                 <div class="skills-section resizable-section" id="skillsSection">
                     <div class="section-title">
                         SKILLS
-                        <button type="button" class="add-btn" id="addSkillBtn" title="Add Skill">+</button>
+                        <button type="button" class="add-btn" id="addSkillBtn" title="Add Skill" aria-label="Add new skill">+</button>
                     </div>
                     <div class="skills-list" id="skillsList">
                         <!-- Skills will be dynamically added here -->
@@ -356,7 +359,7 @@
                 <div class="weapons-section resizable-section" id="weaponsSection">
                     <div class="section-title">
                         WEAPONS & DAMAGE CANTRIPS
-                        <button type="button" class="add-btn" id="addWeaponBtn" title="Add Weapon">+</button>
+                        <button type="button" class="add-btn" id="addWeaponBtn" title="Add Weapon" aria-label="Add new weapon">+</button>
                     </div>
                     <table class="weapons-table">
                         <thead>
@@ -506,7 +509,7 @@
         <div class="spells-section">
             <div class="section-title">
                 CANTRIPS & PREPARED SPELLS
-                <button type="button" class="add-btn" id="addSpellBtn" title="Add Spell">+</button>
+                <button type="button" class="add-btn" id="addSpellBtn" title="Add Spell" aria-label="Add new spell">+</button>
             </div>
             <table class="spells-table">
                 <thead>

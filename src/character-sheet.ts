@@ -1,3 +1,24 @@
+// Type Definitions
+type AbilityName = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
+type AbilitySource = 'base' | 'race' | 'asi' | 'feat' | 'magic';
+
+interface AbilityScoreBreakdown {
+    base: number;
+    race: number;
+    asi: number;
+    feat: number;
+    magic: number;
+}
+
+interface AbilityScores {
+    str: AbilityScoreBreakdown;
+    dex: AbilityScoreBreakdown;
+    con: AbilityScoreBreakdown;
+    int: AbilityScoreBreakdown;
+    wis: AbilityScoreBreakdown;
+    cha: AbilityScoreBreakdown;
+}
+
 // Layout Data Interface
 interface LayoutData {
     skillsWidth: number;
@@ -171,50 +192,7 @@ interface DnDCharacterData {
     experience: number;
 
     // Ability Scores - broken down by source
-    abilityScores: {
-        str: {
-            base: number;
-            race: number;
-            asi: number;
-            feat: number;
-            magic: number;
-        };
-        dex: {
-            base: number;
-            race: number;
-            asi: number;
-            feat: number;
-            magic: number;
-        };
-        con: {
-            base: number;
-            race: number;
-            asi: number;
-            feat: number;
-            magic: number;
-        };
-        int: {
-            base: number;
-            race: number;
-            asi: number;
-            feat: number;
-            magic: number;
-        };
-        wis: {
-            base: number;
-            race: number;
-            asi: number;
-            feat: number;
-            magic: number;
-        };
-        cha: {
-            base: number;
-            race: number;
-            asi: number;
-            feat: number;
-            magic: number;
-        };
-    };
+    abilityScores: AbilityScores;
     
     // Ability Modifiers (auto-calculated, but editable)
     abilityModifiers: {
@@ -261,7 +239,7 @@ interface DnDCharacterData {
     skills: Array<{
         id: string;
         name: string;
-        ability: 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
+        ability: AbilityName;
         proficient: boolean;
         modifier: string; // Editable modifier
     }>;
@@ -337,6 +315,12 @@ class CharacterSheet {
     private nextWeaponId: number = 100;
     private nextSpellId: number = 100;
     private layoutManager: LayoutManager;
+    
+    // Undo/Redo functionality
+    private history: DnDCharacterData[] = [];
+    private historyIndex: number = -1;
+    private readonly MAX_HISTORY = 50;
+    private historyTimeout: number | null = null;
 
     constructor() {
         // Initialize layout manager first (will be updated with saved layout in loadData)
@@ -346,40 +330,60 @@ class CharacterSheet {
             // For now, we'll save layout when user clicks Save button
         });
         this.data = this.loadData();
+        // Initialize history with current state
+        this.pushHistory();
         this.initializeEventListeners();
         this.renderSkills();
         this.renderWeapons();
         this.renderSpells();
         this.updateAll();
+        this.updateHistoryButtons();
+    }
+
+    private validateAndMigrateData(data: any): DnDCharacterData {
+        try {
+            // Validate structure
+            if (!data || typeof data !== 'object') {
+                throw new Error('Invalid data structure');
+            }
+            
+            // Migrate old formats and merge with defaults
+            return this.mergeWithDefaults(data);
+        } catch (error) {
+            console.error('Data validation failed:', error);
+            this.showSaveStatus('error', 'Failed to validate character data');
+            return this.getDefaultData();
+        }
     }
 
     private loadData(): DnDCharacterData {
         // Try to load from localStorage first (for backward compatibility)
-        const saved = localStorage.getItem(this.STORAGE_KEY);
-        if (saved) {
-            try {
-                const fileData = JSON.parse(saved);
-                
-                // Handle both old format (direct data) and new format (with character-definition and sheet-layout)
-                let characterData: any;
-                let layoutData: LayoutData | undefined;
-                
-                if (fileData['character-definition'] && fileData['sheet-layout']) {
-                    // New format
-                    characterData = fileData['character-definition'];
-                    layoutData = fileData['sheet-layout'];
-                } else {
-                    // Old format - just character data
-                    characterData = fileData;
-                }
-                
-                // Apply layout if available
-                if (layoutData) {
-                    this.layoutManager.setLayout(layoutData);
-                }
-                
-                // Migrate old skills format to new format
-                if (characterData.skills && !Array.isArray(characterData.skills)) {
+        try {
+            const saved = localStorage.getItem(this.STORAGE_KEY);
+            if (saved) {
+                try {
+                    const fileData = JSON.parse(saved);
+                    
+                    // Handle both old format (direct data) and new format (with character-definition and sheet-layout)
+                    let characterData: any;
+                    let layoutData: LayoutData | undefined;
+                    
+                    if (fileData['character-definition'] && fileData['sheet-layout']) {
+                        // New format
+                        characterData = fileData['character-definition'];
+                        layoutData = fileData['sheet-layout'];
+                    } else {
+                        // Old format - just character data
+                        characterData = fileData;
+                    }
+                    
+                    // Apply layout if available
+                    if (layoutData) {
+                        this.layoutManager.setLayout(layoutData);
+                    }
+                    
+                    // Migrate old skills format to new format
+                    if (characterData.skills && !Array.isArray(characterData.skills)) {
                     const oldSkills = characterData.skills;
                     const skillNames: { [key: string]: string } = {
                         'athletics': 'Athletics',
@@ -437,11 +441,16 @@ class CharacterSheet {
                 if (!characterData.spells || !Array.isArray(characterData.spells)) {
                     characterData.spells = [];
                 }
-                // Merge with defaults to ensure all fields exist
-                return this.mergeWithDefaults(characterData);
-            } catch (e) {
-                console.error('Error loading saved data:', e);
+                    // Validate and migrate data
+                    return this.validateAndMigrateData(characterData);
+                } catch (parseError) {
+                    console.error('Error parsing saved data:', parseError);
+                    this.showSaveStatus('error', 'Failed to parse saved character data');
+                }
             }
+        } catch (error) {
+            console.error('Error loading character data:', error);
+            this.showSaveStatus('error', 'Failed to load saved character');
         }
         return this.getDefaultData();
     }
@@ -556,7 +565,7 @@ class CharacterSheet {
                 int: { base: 10, race: 0, asi: 0, feat: 0, magic: 0 },
                 wis: { base: 10, race: 0, asi: 0, feat: 0, magic: 0 },
                 cha: { base: 10, race: 0, asi: 0, feat: 0, magic: 0 }
-            },
+            } as AbilityScores,
             abilityModifiers: {
                 str: '+0',
                 dex: '+0',
@@ -636,150 +645,15 @@ class CharacterSheet {
         this.addInputListener('playerName', (v) => this.data.playerName = v);
         this.addInputListener('race', (v) => this.data.race = v);
         this.addInputListener('level', (v) => {
-            this.data.level = parseInt(v) || 1;
+            this.data.level = this.validateLevel(parseInt(v) || 1);
         });
         this.addInputListener('background', (v) => this.data.background = v);
         this.addInputListener('subclass', (v) => this.data.subclass = v);
         this.addInputListener('alignment', (v) => this.data.alignment = v);
         this.addInputListener('experience', (v) => this.data.experience = parseInt(v) || 0);
 
-        // Ability Scores - Base
-        this.addInputListener('strBase', (v) => {
-            this.data.abilityScores.str.base = parseInt(v) || 10;
-            this.updateAbilityScore('str');
-        });
-        this.addInputListener('dexBase', (v) => {
-            this.data.abilityScores.dex.base = parseInt(v) || 10;
-            this.updateAbilityScore('dex');
-        });
-        this.addInputListener('conBase', (v) => {
-            this.data.abilityScores.con.base = parseInt(v) || 10;
-            this.updateAbilityScore('con');
-        });
-        this.addInputListener('intBase', (v) => {
-            this.data.abilityScores.int.base = parseInt(v) || 10;
-            this.updateAbilityScore('int');
-        });
-        this.addInputListener('wisBase', (v) => {
-            this.data.abilityScores.wis.base = parseInt(v) || 10;
-            this.updateAbilityScore('wis');
-        });
-        this.addInputListener('chaBase', (v) => {
-            this.data.abilityScores.cha.base = parseInt(v) || 10;
-            this.updateAbilityScore('cha');
-        });
-        
-        // Ability Scores - Race
-        this.addInputListener('strRace', (v) => {
-            this.data.abilityScores.str.race = parseInt(v) || 0;
-            this.updateAbilityScore('str');
-        });
-        this.addInputListener('dexRace', (v) => {
-            this.data.abilityScores.dex.race = parseInt(v) || 0;
-            this.updateAbilityScore('dex');
-        });
-        this.addInputListener('conRace', (v) => {
-            this.data.abilityScores.con.race = parseInt(v) || 0;
-            this.updateAbilityScore('con');
-        });
-        this.addInputListener('intRace', (v) => {
-            this.data.abilityScores.int.race = parseInt(v) || 0;
-            this.updateAbilityScore('int');
-        });
-        this.addInputListener('wisRace', (v) => {
-            this.data.abilityScores.wis.race = parseInt(v) || 0;
-            this.updateAbilityScore('wis');
-        });
-        this.addInputListener('chaRace', (v) => {
-            this.data.abilityScores.cha.race = parseInt(v) || 0;
-            this.updateAbilityScore('cha');
-        });
-        
-        // Ability Scores - ASI
-        this.addInputListener('strASI', (v) => {
-            this.data.abilityScores.str.asi = parseInt(v) || 0;
-            this.updateAbilityScore('str');
-        });
-        this.addInputListener('dexASI', (v) => {
-            this.data.abilityScores.dex.asi = parseInt(v) || 0;
-            this.updateAbilityScore('dex');
-        });
-        this.addInputListener('conASI', (v) => {
-            this.data.abilityScores.con.asi = parseInt(v) || 0;
-            this.updateAbilityScore('con');
-        });
-        this.addInputListener('intASI', (v) => {
-            this.data.abilityScores.int.asi = parseInt(v) || 0;
-            this.updateAbilityScore('int');
-        });
-        this.addInputListener('wisASI', (v) => {
-            this.data.abilityScores.wis.asi = parseInt(v) || 0;
-            this.updateAbilityScore('wis');
-        });
-        this.addInputListener('chaASI', (v) => {
-            this.data.abilityScores.cha.asi = parseInt(v) || 0;
-            this.updateAbilityScore('cha');
-        });
-        
-        // Ability Scores - Feat
-        this.addInputListener('strFeat', (v) => {
-            this.data.abilityScores.str.feat = parseInt(v) || 0;
-            this.updateAbilityScore('str');
-        });
-        this.addInputListener('dexFeat', (v) => {
-            this.data.abilityScores.dex.feat = parseInt(v) || 0;
-            this.updateAbilityScore('dex');
-        });
-        this.addInputListener('conFeat', (v) => {
-            this.data.abilityScores.con.feat = parseInt(v) || 0;
-            this.updateAbilityScore('con');
-        });
-        this.addInputListener('intFeat', (v) => {
-            this.data.abilityScores.int.feat = parseInt(v) || 0;
-            this.updateAbilityScore('int');
-        });
-        this.addInputListener('wisFeat', (v) => {
-            this.data.abilityScores.wis.feat = parseInt(v) || 0;
-            this.updateAbilityScore('wis');
-        });
-        this.addInputListener('chaFeat', (v) => {
-            this.data.abilityScores.cha.feat = parseInt(v) || 0;
-            this.updateAbilityScore('cha');
-        });
-        
-        // Ability Scores - Magic
-        this.addInputListener('strMagic', (v) => {
-            this.data.abilityScores.str.magic = parseInt(v) || 0;
-            this.updateAbilityScore('str');
-        });
-        this.addInputListener('dexMagic', (v) => {
-            this.data.abilityScores.dex.magic = parseInt(v) || 0;
-            this.updateAbilityScore('dex');
-        });
-        this.addInputListener('conMagic', (v) => {
-            this.data.abilityScores.con.magic = parseInt(v) || 0;
-            this.updateAbilityScore('con');
-        });
-        this.addInputListener('intMagic', (v) => {
-            this.data.abilityScores.int.magic = parseInt(v) || 0;
-            this.updateAbilityScore('int');
-        });
-        this.addInputListener('wisMagic', (v) => {
-            this.data.abilityScores.wis.magic = parseInt(v) || 0;
-            this.updateAbilityScore('wis');
-        });
-        this.addInputListener('chaMagic', (v) => {
-            this.data.abilityScores.cha.magic = parseInt(v) || 0;
-            this.updateAbilityScore('cha');
-        });
-        
-        // Ability Modifiers (auto-calculated, but editable)
-        this.addInputListener('strMod', (v) => this.data.abilityModifiers.str = v);
-        this.addInputListener('dexMod', (v) => this.data.abilityModifiers.dex = v);
-        this.addInputListener('conMod', (v) => this.data.abilityModifiers.con = v);
-        this.addInputListener('intMod', (v) => this.data.abilityModifiers.int = v);
-        this.addInputListener('wisMod', (v) => this.data.abilityModifiers.wis = v);
-        this.addInputListener('chaMod', (v) => this.data.abilityModifiers.cha = v);
+        // Ability Scores - setup using helper function (reduces duplication)
+        this.setupAbilityScoreListeners();
 
         // Saving Throws
         this.addCheckboxListener('strSaveProf', (v) => this.data.savingThrows.str = v);
@@ -841,6 +715,28 @@ class CharacterSheet {
         if (loadBtn) {
             loadBtn.addEventListener('click', () => this.loadFromFile());
         }
+
+        // Undo/Redo buttons
+        const undoBtn = document.getElementById('undoBtn');
+        if (undoBtn) {
+            undoBtn.addEventListener('click', () => this.undo());
+        }
+
+        const redoBtn = document.getElementById('redoBtn');
+        if (redoBtn) {
+            redoBtn.addEventListener('click', () => this.redo());
+        }
+
+        // Keyboard shortcuts for undo/redo
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                this.undo();
+            } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                e.preventDefault();
+                this.redo();
+            }
+        });
 
         // Features & Spells
         this.addTextareaListener('features', (v) => this.data.features = v);
@@ -906,6 +802,8 @@ class CharacterSheet {
         if (element) {
             element.addEventListener('input', () => {
                 callback(element.value);
+                // Push to history for undo/redo (debounced)
+                this.debouncedPushHistory();
             });
         }
     }
@@ -916,12 +814,13 @@ class CharacterSheet {
         return modifier >= 0 ? `+${modifier}` : `${modifier}`;
     }
 
-    private calculateTotalAbilityScore(ability: 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'): number {
+    private calculateTotalAbilityScore(ability: AbilityName): number {
         const scores = this.data.abilityScores[ability];
-        return scores.base + scores.race + scores.asi + scores.feat + scores.magic;
+        const total = scores.base + scores.race + scores.asi + scores.feat + scores.magic;
+        return this.validateAbilityScore(total);
     }
 
-    private updateAbilityScore(ability: 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'): void {
+    private updateAbilityScore(ability: AbilityName): void {
         const total = this.calculateTotalAbilityScore(ability);
         const modifier = this.calculateAbilityModifier(total);
         
@@ -944,10 +843,12 @@ class CharacterSheet {
         if (element) {
             element.addEventListener('input', () => {
                 callback(element.value);
+                this.debouncedPushHistory();
             });
             // Also listen to blur to catch any changes
             element.addEventListener('blur', () => {
                 callback(element.value);
+                this.debouncedPushHistory();
             });
         }
     }
@@ -957,8 +858,113 @@ class CharacterSheet {
         if (element) {
             element.addEventListener('change', () => {
                 callback(element.checked);
+                this.debouncedPushHistory();
             });
         }
+    }
+
+    // Validation functions
+    private validateAbilityScore(value: number): number {
+        return Math.max(1, Math.min(30, value)); // D&D 2024 caps at 30
+    }
+
+    private validateLevel(level: number): number {
+        return Math.max(1, Math.min(20, level));
+    }
+
+    private validateAbilityModifier(value: number): number {
+        // Modifiers can go negative, but typically -5 to +10
+        return Math.max(-5, Math.min(10, value));
+    }
+
+    // Undo/Redo methods
+    private pushHistory(): void {
+        // Remove any history after current index (if user undid, then made new change)
+        this.history = this.history.slice(0, this.historyIndex + 1);
+        
+        // Add current state
+        const stateCopy = JSON.parse(JSON.stringify(this.data));
+        this.history.push(stateCopy);
+        this.historyIndex++;
+        
+        // Limit history size
+        if (this.history.length > this.MAX_HISTORY) {
+            this.history.shift();
+            this.historyIndex--;
+        }
+        
+        // Update undo/redo button states
+        this.updateHistoryButtons();
+    }
+
+    private undo(): void {
+        if (this.historyIndex > 0) {
+            this.historyIndex--;
+            this.data = JSON.parse(JSON.stringify(this.history[this.historyIndex]));
+            this.updateAll();
+            this.updateHistoryButtons();
+        }
+    }
+
+    private redo(): void {
+        if (this.historyIndex < this.history.length - 1) {
+            this.historyIndex++;
+            this.data = JSON.parse(JSON.stringify(this.history[this.historyIndex]));
+            this.updateAll();
+            this.updateHistoryButtons();
+        }
+    }
+
+    private updateHistoryButtons(): void {
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
+        
+        if (undoBtn) {
+            undoBtn.classList.toggle('disabled', this.historyIndex <= 0);
+            (undoBtn as HTMLButtonElement).disabled = this.historyIndex <= 0;
+        }
+        
+        if (redoBtn) {
+            redoBtn.classList.toggle('disabled', this.historyIndex >= this.history.length - 1);
+            (redoBtn as HTMLButtonElement).disabled = this.historyIndex >= this.history.length - 1;
+        }
+    }
+
+    // Debounced history push (to avoid too many history entries)
+    private debouncedPushHistory(): void {
+        if (this.historyTimeout) {
+            clearTimeout(this.historyTimeout);
+        }
+        this.historyTimeout = window.setTimeout(() => {
+            this.pushHistory();
+        }, 500);
+    }
+
+    // Setup ability score listeners (reduces code duplication)
+    private setupAbilityScoreListeners(): void {
+        const abilities: AbilityName[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+        const sources: AbilitySource[] = ['base', 'race', 'asi', 'feat', 'magic'];
+        
+        abilities.forEach(ability => {
+            sources.forEach(source => {
+                // Capitalize first letter for field name (e.g., 'base' -> 'Base')
+                const fieldName = `${ability}${source.charAt(0).toUpperCase() + source.slice(1)}`;
+                this.addInputListener(fieldName, (v) => {
+                    // Base has default of 10, others default to 0
+                    const defaultValue = source === 'base' ? 10 : 0;
+                    const value = this.validateAbilityScore(parseInt(v) || defaultValue);
+                    this.data.abilityScores[ability][source] = value;
+                    this.updateAbilityScore(ability);
+                    this.debouncedPushHistory();
+                });
+            });
+            
+            // Modifier listeners (editable but auto-calculated)
+            this.addInputListener(`${ability}Mod`, (v) => {
+                this.data.abilityModifiers[ability] = v;
+                this.debouncedPushHistory();
+            });
+        });
     }
 
 
@@ -992,7 +998,7 @@ class CharacterSheet {
         if (experience) experience.value = this.data.experience.toString();
 
         // Ability Scores - populate all fields and calculate totals/modifiers
-        const abilities = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
+        const abilities: AbilityName[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
         abilities.forEach(ability => {
             const scores = this.data.abilityScores[ability];
             
@@ -1317,8 +1323,8 @@ class CharacterSheet {
                 <option value="wis" ${skill.ability === 'wis' ? 'selected' : ''}>WIS</option>
                 <option value="cha" ${skill.ability === 'cha' ? 'selected' : ''}>CHA</option>
             </select>
-            <input type="text" class="skill-modifier" value="${skill.modifier || '+0'}" data-skill-id="${skill.id}" placeholder="+0">
-            <button type="button" class="remove-btn" data-skill-id="${skill.id}">×</button>
+            <input type="text" class="skill-modifier" value="${skill.modifier || '+0'}" data-skill-id="${skill.id}" placeholder="+0" aria-label="Skill modifier">
+            <button type="button" class="remove-btn" data-skill-id="${skill.id}" aria-label="Remove skill">×</button>
         `;
 
         // Add event listeners
@@ -1332,6 +1338,7 @@ class CharacterSheet {
             const skillData = this.data.skills.find(s => s.id === skill.id);
             if (skillData) {
                 skillData.proficient = checkbox.checked;
+                this.debouncedPushHistory();
             }
         });
 
@@ -1339,19 +1346,24 @@ class CharacterSheet {
             const skillData = this.data.skills.find(s => s.id === skill.id);
             if (skillData) {
                 skillData.name = nameInput.value;
+                this.debouncedPushHistory();
             }
         });
 
         abilitySelect.addEventListener('change', () => {
             const skillData = this.data.skills.find(s => s.id === skill.id);
             if (skillData) {
-                skillData.ability = abilitySelect.value as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
+                skillData.ability = abilitySelect.value as AbilityName;
+                this.debouncedPushHistory();
             }
         });
 
         modifierInput.addEventListener('input', () => {
             const skillData = this.data.skills.find(s => s.id === skill.id);
-            if (skillData) skillData.modifier = modifierInput.value;
+            if (skillData) {
+                skillData.modifier = modifierInput.value;
+                this.debouncedPushHistory();
+            }
         });
 
         removeBtn.addEventListener('click', () => {
@@ -1372,11 +1384,13 @@ class CharacterSheet {
         this.data.skills.push(newSkill);
         this.nextSkillId++;
         this.renderSkills();
+        this.pushHistory();
     }
 
     private removeSkill(id: string): void {
         this.data.skills = this.data.skills.filter(s => s.id !== id);
         this.renderSkills();
+        this.pushHistory();
     }
 
 
@@ -1398,48 +1412,62 @@ class CharacterSheet {
         }
     }
 
+    // Generic helper to create input field with event listener
+    private createInputField<T extends { id: string }>(
+        data: T,
+        key: keyof T,
+        className: string,
+        placeholder: string,
+        onUpdate: (data: T, value: string) => void
+    ): HTMLInputElement {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = className;
+        input.value = String(data[key] || '');
+        input.placeholder = placeholder;
+        input.setAttribute(`data-${className.split('-')[0]}-id`, data.id);
+        input.addEventListener('input', () => {
+            onUpdate(data, input.value);
+        });
+        return input;
+    }
+
     private createWeaponRow(weapon: { id: string; name: string; atkBonus: string; damage: string; notes: string }): HTMLElement {
         const row = document.createElement('tr');
         row.dataset.weaponId = weapon.id;
 
-        row.innerHTML = `
-            <td><input type="text" class="weapon-name" value="${weapon.name}" data-weapon-id="${weapon.id}" placeholder="Weapon name"></td>
-            <td><input type="text" class="weapon-atk" value="${weapon.atkBonus}" data-weapon-id="${weapon.id}" placeholder="+6"></td>
-            <td><input type="text" class="weapon-damage" value="${weapon.damage}" data-weapon-id="${weapon.id}" placeholder="1d8+3 slashing"></td>
-            <td><input type="text" class="weapon-notes" value="${weapon.notes}" data-weapon-id="${weapon.id}" placeholder="Notes"></td>
-            <td><button type="button" class="remove-btn" data-weapon-id="${weapon.id}">×</button></td>
-        `;
+        // Define weapon fields in a data-driven way
+        const weaponFields = [
+            { key: 'name' as const, placeholder: 'Weapon name', className: 'weapon-name' },
+            { key: 'atkBonus' as const, placeholder: '+6', className: 'weapon-atk' },
+            { key: 'damage' as const, placeholder: '1d8+3 slashing', className: 'weapon-damage' },
+            { key: 'notes' as const, placeholder: 'Notes', className: 'weapon-notes' }
+        ];
 
-        // Add event listeners
-        const nameInput = row.querySelector('.weapon-name') as HTMLInputElement;
-        const atkInput = row.querySelector('.weapon-atk') as HTMLInputElement;
-        const damageInput = row.querySelector('.weapon-damage') as HTMLInputElement;
-        const notesInput = row.querySelector('.weapon-notes') as HTMLInputElement;
-        const removeBtn = row.querySelector('.remove-btn') as HTMLButtonElement;
-
-        nameInput.addEventListener('input', () => {
-            const weaponData = this.data.weapons.find(w => w.id === weapon.id);
-            if (weaponData) weaponData.name = nameInput.value;
+        // Create input fields
+        weaponFields.forEach(field => {
+            const td = document.createElement('td');
+            const input = this.createInputField(weapon, field.key, field.className, field.placeholder, (data, value) => {
+                (data as any)[field.key] = value;
+                this.debouncedPushHistory();
+            });
+            td.appendChild(input);
+            row.appendChild(td);
         });
 
-        atkInput.addEventListener('input', () => {
-            const weaponData = this.data.weapons.find(w => w.id === weapon.id);
-            if (weaponData) weaponData.atkBonus = atkInput.value;
-        });
-
-        damageInput.addEventListener('input', () => {
-            const weaponData = this.data.weapons.find(w => w.id === weapon.id);
-            if (weaponData) weaponData.damage = damageInput.value;
-        });
-
-        notesInput.addEventListener('input', () => {
-            const weaponData = this.data.weapons.find(w => w.id === weapon.id);
-            if (weaponData) weaponData.notes = notesInput.value;
-        });
-
+        // Add remove button
+        const removeTd = document.createElement('td');
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-btn';
+        removeBtn.textContent = '×';
+        removeBtn.setAttribute('data-weapon-id', weapon.id);
+        removeBtn.setAttribute('aria-label', 'Remove weapon');
         removeBtn.addEventListener('click', () => {
             this.removeWeapon(weapon.id);
         });
+        removeTd.appendChild(removeBtn);
+        row.appendChild(removeTd);
 
         return row;
     }
@@ -1483,9 +1511,14 @@ class CharacterSheet {
                             this.layoutManager.setLayout(layoutData);
                         }
                         
-                        // Merge with defaults and load
-                        this.data = this.mergeWithDefaults(characterData);
+                        // Validate and merge with defaults
+                        this.data = this.validateAndMigrateData(characterData);
+                        // Reset history after loading
+                        this.history = [];
+                        this.historyIndex = -1;
+                        this.pushHistory();
                         this.updateAll();
+                        this.updateHistoryButtons();
                         this.showSaveStatus('saved', 'Loaded from file');
                         setTimeout(() => {
                             const statusEl = document.getElementById('saveStatus');
@@ -1560,8 +1593,14 @@ class CharacterSheet {
                             this.layoutManager.setLayout(layoutData);
                         }
                         
-                        this.data = this.mergeWithDefaults(characterData);
+                        // Validate and merge with defaults
+                        this.data = this.validateAndMigrateData(characterData);
+                        // Reset history after loading
+                        this.history = [];
+                        this.historyIndex = -1;
+                        this.pushHistory();
                         this.updateAll();
+                        this.updateHistoryButtons();
                         this.showSaveStatus('saved', 'Loaded from file');
                         setTimeout(() => {
                             const statusEl = document.getElementById('saveStatus');
@@ -1595,11 +1634,13 @@ class CharacterSheet {
         this.data.weapons.push(newWeapon);
         this.nextWeaponId++;
         this.renderWeapons();
+        this.pushHistory();
     }
 
     private removeWeapon(id: string): void {
         this.data.weapons = this.data.weapons.filter(w => w.id !== id);
         this.renderWeapons();
+        this.pushHistory();
     }
 
     private renderSpells(): void {
@@ -1624,65 +1665,41 @@ class CharacterSheet {
         const row = document.createElement('tr');
         row.dataset.spellId = spell.id;
 
-        row.innerHTML = `
-            <td><input type="text" class="spell-name" value="${spell.name}" data-spell-id="${spell.id}" placeholder="Fire Bolt"></td>
-            <td><input type="text" class="spell-level" value="${spell.level}" data-spell-id="${spell.id}" placeholder="Cantrip"></td>
-            <td><input type="text" class="spell-casting-time" value="${spell.castingTime}" data-spell-id="${spell.id}" placeholder="1 action"></td>
-            <td><input type="text" class="spell-concentration" value="${spell.concentration}" data-spell-id="${spell.id}" placeholder="Concentration, Ritual"></td>
-            <td><input type="text" class="spell-range" value="${spell.range}" data-spell-id="${spell.id}" placeholder="120 ft"></td>
-            <td><input type="text" class="spell-material" value="${spell.material}" data-spell-id="${spell.id}" placeholder="Required Material"></td>
-            <td><input type="text" class="spell-notes" value="${spell.notes}" data-spell-id="${spell.id}" placeholder="Notes"></td>
-            <td><button type="button" class="remove-btn" data-spell-id="${spell.id}">×</button></td>
-        `;
+        // Define spell fields in a data-driven way
+        const spellFields = [
+            { key: 'name' as const, placeholder: 'Fire Bolt', className: 'spell-name' },
+            { key: 'level' as const, placeholder: 'Cantrip', className: 'spell-level' },
+            { key: 'castingTime' as const, placeholder: '1 action', className: 'spell-casting-time' },
+            { key: 'concentration' as const, placeholder: 'Concentration, Ritual', className: 'spell-concentration' },
+            { key: 'range' as const, placeholder: '120 ft', className: 'spell-range' },
+            { key: 'material' as const, placeholder: 'Required Material', className: 'spell-material' },
+            { key: 'notes' as const, placeholder: 'Notes', className: 'spell-notes' }
+        ];
 
-        // Add event listeners
-        const nameInput = row.querySelector('.spell-name') as HTMLInputElement;
-        const levelInput = row.querySelector('.spell-level') as HTMLInputElement;
-        const castingTimeInput = row.querySelector('.spell-casting-time') as HTMLInputElement;
-        const concentrationInput = row.querySelector('.spell-concentration') as HTMLInputElement;
-        const rangeInput = row.querySelector('.spell-range') as HTMLInputElement;
-        const materialInput = row.querySelector('.spell-material') as HTMLInputElement;
-        const notesInput = row.querySelector('.spell-notes') as HTMLInputElement;
-        const removeBtn = row.querySelector('.remove-btn') as HTMLButtonElement;
-
-        nameInput.addEventListener('input', () => {
-            const spellData = this.data.spells.find(s => s.id === spell.id);
-            if (spellData) spellData.name = nameInput.value;
+        // Create input fields
+        spellFields.forEach(field => {
+            const td = document.createElement('td');
+            const input = this.createInputField(spell, field.key, field.className, field.placeholder, (data, value) => {
+                (data as any)[field.key] = value;
+                this.debouncedPushHistory();
+            });
+            td.appendChild(input);
+            row.appendChild(td);
         });
 
-        levelInput.addEventListener('input', () => {
-            const spellData = this.data.spells.find(s => s.id === spell.id);
-            if (spellData) spellData.level = levelInput.value;
-        });
-
-        castingTimeInput.addEventListener('input', () => {
-            const spellData = this.data.spells.find(s => s.id === spell.id);
-            if (spellData) spellData.castingTime = castingTimeInput.value;
-        });
-
-        concentrationInput.addEventListener('input', () => {
-            const spellData = this.data.spells.find(s => s.id === spell.id);
-            if (spellData) spellData.concentration = concentrationInput.value;
-        });
-
-        rangeInput.addEventListener('input', () => {
-            const spellData = this.data.spells.find(s => s.id === spell.id);
-            if (spellData) spellData.range = rangeInput.value;
-        });
-
-        materialInput.addEventListener('input', () => {
-            const spellData = this.data.spells.find(s => s.id === spell.id);
-            if (spellData) spellData.material = materialInput.value;
-        });
-
-        notesInput.addEventListener('input', () => {
-            const spellData = this.data.spells.find(s => s.id === spell.id);
-            if (spellData) spellData.notes = notesInput.value;
-        });
-
+        // Add remove button
+        const removeTd = document.createElement('td');
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-btn';
+        removeBtn.textContent = '×';
+        removeBtn.setAttribute('data-spell-id', spell.id);
+        removeBtn.setAttribute('aria-label', 'Remove spell');
         removeBtn.addEventListener('click', () => {
             this.removeSpell(spell.id);
         });
+        removeTd.appendChild(removeBtn);
+        row.appendChild(removeTd);
 
         return row;
     }
@@ -1701,11 +1718,13 @@ class CharacterSheet {
         this.data.spells.push(newSpell);
         this.nextSpellId++;
         this.renderSpells();
+        this.pushHistory();
     }
 
     private removeSpell(id: string): void {
         this.data.spells = this.data.spells.filter(s => s.id !== id);
         this.renderSpells();
+        this.pushHistory();
     }
 
     private showSaveStatus(status: 'saving' | 'saved' | 'error', message: string): void {
