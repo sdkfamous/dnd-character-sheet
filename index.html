@@ -17,6 +17,8 @@
     
     <!-- Page 1 -->
     <div class="character-sheet page-1">
+        <!-- Group: Top Row -->
+        <div class="content-group" data-group="top-row" style="outline: 2px solid red; outline-offset: 4px; margin: 4px; margin-bottom: 20px;">
         <!-- Top Row -->
         <div class="top-row">
             <!-- Most Left Box: Name, Species, Class, Background, Subclass -->
@@ -122,7 +124,10 @@
                 </div>
             </div>
         </div>
+        </div>
 
+        <!-- Group: Ability Scores and Combat Stats -->
+        <div class="content-group" data-group="ability-scores-combat-stats" style="outline: 2px solid blue; outline-offset: 4px; margin: 4px; margin-bottom: 20px;">
         <!-- Row 2: Ability Scores -->
         <div class="row-2">
             <div class="stat-box">
@@ -335,7 +340,10 @@
                 <input type="checkbox" id="heroicInspiration" class="row3-checkbox" aria-label="Heroic inspiration">
             </div>
         </div>
+        </div>
 
+        <!-- Group: Main Content and Bottom Sections -->
+        <div class="content-group" data-group="main-content-bottom" style="outline: 2px solid green; outline-offset: 4px; margin: 4px; margin-bottom: 20px;">
         <div class="main-content">
             <!-- Left Column -->
             <div class="left-column">
@@ -423,10 +431,13 @@
                 <textarea id="speciesTraits" rows="6" placeholder="Species traits and features..."></textarea>
             </div>
         </div>
+        </div>
     </div>
 
     <!-- Page 2 -->
     <div class="character-sheet page-2">
+        <!-- Group: Spellcasting and Spells -->
+        <div class="content-group" data-group="spellcasting-spells" style="outline: 2px solid purple; outline-offset: 4px; margin: 4px; margin-bottom: 20px;">
         <!-- Spellcasting Section -->
         <div class="spellcasting-section">
             <div class="section-title">SPELLCASTING</div>
@@ -533,7 +544,10 @@
                 <textarea id="knownSpells" rows="6" placeholder="List known spells..."></textarea>
             </div>
         </div>
+        </div>
 
+        <!-- Group: Equipment & Coins -->
+        <div class="content-group" data-group="equipment-coins" style="outline: 2px solid orange; outline-offset: 4px; margin: 4px; margin-bottom: 20px;">
         <!-- Equipment & Coins -->
         <div class="equipment-coins-section">
             <div class="equipment-detail-section">
@@ -566,7 +580,10 @@
                 </div>
             </div>
         </div>
+        </div>
 
+        <!-- Group: Character Details -->
+        <div class="content-group" data-group="character-details" style="outline: 2px solid teal; outline-offset: 4px; margin: 4px; margin-bottom: 20px;">
         <!-- Languages -->
         <div class="languages-section">
             <div class="section-title">LANGUAGES</div>
@@ -589,6 +606,7 @@
         <div class="notes-section">
             <div class="section-title">NOTES</div>
             <textarea id="notes" rows="6" placeholder="Additional notes..."></textarea>
+        </div>
         </div>
     </div>
 
