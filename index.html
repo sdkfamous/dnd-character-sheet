@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D 5e Character Sheet</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="save-controls">
+        <button type="button" id="saveBtn" class="save-button">Save</button>
+        <button type="button" id="loadBtn" class="save-button">Load</button>
+        <div class="save-status" id="saveStatus"></div>
+    </div>
+    
+    <!-- Page 1 -->
+    <div class="character-sheet page-1">
+        <!-- Top Row -->
+        <div class="top-row">
+            <!-- Most Left Box: Name, Species, Class, Background, Subclass -->
+            <div class="top-box top-box-1">
+                <div class="top-field">
+                    <label>NAME</label>
+                    <input type="text" id="characterName" class="top-input">
+                </div>
+                <div class="top-field">
+                    <label>SPECIES</label>
+                    <input type="text" id="race" class="top-input">
+                </div>
+                <div class="top-field">
+                    <label>CLASS</label>
+                    <input type="text" id="class" class="top-input">
+                </div>
+                <div class="top-field">
+                    <label>BACKGROUND</label>
+                    <input type="text" id="background" class="top-input">
+                </div>
+                <div class="top-field">
+                    <label>SUBCLASS</label>
+                    <input type="text" id="subclass" class="top-input">
+                </div>
+            </div>
+
+            <!-- Next Left Box: Level, XP -->
+            <div class="top-box top-box-2">
+                <div class="top-field">
+                    <label>LEVEL</label>
+                    <input type="number" id="level" class="top-input" min="1" max="20">
+                </div>
+                <div class="top-field">
+                    <label>XP</label>
+                    <input type="number" id="experience" class="top-input" min="0">
+                </div>
+            </div>
+
+            <!-- Next Left Box: Armour Class, Shield (toggle) -->
+            <div class="top-box top-box-3">
+                <div class="top-field">
+                    <label>ARMOUR CLASS</label>
+                    <input type="number" id="armorClass" class="top-input" min="0">
+                </div>
+                <div class="top-field">
+                    <label>SHIELD</label>
+                    <input type="checkbox" id="shield" class="top-checkbox">
+                </div>
+            </div>
+
+            <!-- Right Box: Hit Points, Hit Dice, Death Saves -->
+            <div class="top-box top-box-4">
+                <div class="hp-group">
+                    <div class="group-label">HIT POINTS</div>
+                    <div class="hp-fields">
+                        <div class="hp-field">
+                            <label>CURRENT</label>
+                            <input type="number" id="hitPointsCurrent" class="hp-input-small" min="0">
+                        </div>
+                        <div class="hp-field">
+                            <label>MAX</label>
+                            <input type="number" id="hitPointsMax" class="hp-input-small" min="0">
+                        </div>
+                        <div class="hp-field">
+                            <label>TEMP</label>
+                            <input type="number" id="hitPointsTemp" class="hp-input-small" min="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="hitdice-group">
+                    <div class="group-label">HIT DICE</div>
+                    <div class="hitdice-fields">
+                        <div class="hitdice-field">
+                            <label>SPENT</label>
+                            <input type="number" id="hitDiceSpent" class="hp-input-small" min="0">
+                        </div>
+                        <div class="hitdice-field">
+                            <label>MAX</label>
+                            <input type="text" id="hitDice" class="hp-input-small">
+                        </div>
+                    </div>
+                </div>
+                <div class="death-saves-group">
+                    <div class="group-label">DEATH SAVES</div>
+                    <div class="death-saves-fields">
+                        <div class="death-saves-field">
+                            <label>SUCCESSES</label>
+                            <div class="death-checkboxes">
+                                <input type="checkbox" id="deathSave1">
+                                <input type="checkbox" id="deathSave2">
+                                <input type="checkbox" id="deathSave3">
+                            </div>
+                        </div>
+                        <div class="death-saves-field">
+                            <label>FAILURES</label>
+                            <div class="death-checkboxes">
+                                <input type="checkbox" id="deathFail1">
+                                <input type="checkbox" id="deathFail2">
+                                <input type="checkbox" id="deathFail3">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: Ability Scores -->
+        <div class="row-2">
+            <div class="stat-box">
+                <div class="stat-label">STRENGTH</div>
+                <div class="stat-breakdown">
+                    <div class="stat-field-small">
+                        <label>Base</label>
+                        <input type="number" id="strBase" class="stat-input-small" min="1" max="30">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Race</label>
+                        <input type="number" id="strRace" class="stat-input-small" min="-5" max="10">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>ASI</label>
+                        <input type="number" id="strASI" class="stat-input-small" min="0" max="20">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Feat</label>
+                        <input type="number" id="strFeat" class="stat-input-small" min="0" max="10">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Magic</label>
+                        <input type="number" id="strMagic" class="stat-input-small" min="0" max="10">
+                    </div>
+                </div>
+                <div class="stat-total-box">
+                    <label>Total</label>
+                    <div class="stat-total" id="strTotal">10</div>
+                </div>
+                <input type="text" id="strMod" class="stat-modifier">
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">CONSTITUTION</div>
+                <div class="stat-breakdown">
+                    <div class="stat-field-small">
+                        <label>Base</label>
+                        <input type="number" id="conBase" class="stat-input-small" min="1" max="30">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Race</label>
+                        <input type="number" id="conRace" class="stat-input-small" min="-5" max="10">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>ASI</label>
+                        <input type="number" id="conASI" class="stat-input-small" min="0" max="20">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Feat</label>
+                        <input type="number" id="conFeat" class="stat-input-small" min="0" max="10">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Magic</label>
+                        <input type="number" id="conMagic" class="stat-input-small" min="0" max="10">
+                    </div>
+                </div>
+                <div class="stat-total-box">
+                    <label>Total</label>
+                    <div class="stat-total" id="conTotal">10</div>
+                </div>
+                <input type="text" id="conMod" class="stat-modifier">
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">DEXTERITY</div>
+                <div class="stat-breakdown">
+                    <div class="stat-field-small">
+                        <label>Base</label>
+                        <input type="number" id="dexBase" class="stat-input-small" min="1" max="30">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Race</label>
+                        <input type="number" id="dexRace" class="stat-input-small" min="-5" max="10">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>ASI</label>
+                        <input type="number" id="dexASI" class="stat-input-small" min="0" max="20">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Feat</label>
+                        <input type="number" id="dexFeat" class="stat-input-small" min="0" max="10">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Magic</label>
+                        <input type="number" id="dexMagic" class="stat-input-small" min="0" max="10">
+                    </div>
+                </div>
+                <div class="stat-total-box">
+                    <label>Total</label>
+                    <div class="stat-total" id="dexTotal">10</div>
+                </div>
+                <input type="text" id="dexMod" class="stat-modifier">
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">INTELLIGENCE</div>
+                <div class="stat-breakdown">
+                    <div class="stat-field-small">
+                        <label>Base</label>
+                        <input type="number" id="intBase" class="stat-input-small" min="1" max="30">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Race</label>
+                        <input type="number" id="intRace" class="stat-input-small" min="-5" max="10">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>ASI</label>
+                        <input type="number" id="intASI" class="stat-input-small" min="0" max="20">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Feat</label>
+                        <input type="number" id="intFeat" class="stat-input-small" min="0" max="10">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Magic</label>
+                        <input type="number" id="intMagic" class="stat-input-small" min="0" max="10">
+                    </div>
+                </div>
+                <div class="stat-total-box">
+                    <label>Total</label>
+                    <div class="stat-total" id="intTotal">10</div>
+                </div>
+                <input type="text" id="intMod" class="stat-modifier">
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">WISDOM</div>
+                <div class="stat-breakdown">
+                    <div class="stat-field-small">
+                        <label>Base</label>
+                        <input type="number" id="wisBase" class="stat-input-small" min="1" max="30">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Race</label>
+                        <input type="number" id="wisRace" class="stat-input-small" min="-5" max="10">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>ASI</label>
+                        <input type="number" id="wisASI" class="stat-input-small" min="0" max="20">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Feat</label>
+                        <input type="number" id="wisFeat" class="stat-input-small" min="0" max="10">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Magic</label>
+                        <input type="number" id="wisMagic" class="stat-input-small" min="0" max="10">
+                    </div>
+                </div>
+                <div class="stat-total-box">
+                    <label>Total</label>
+                    <div class="stat-total" id="wisTotal">10</div>
+                </div>
+                <input type="text" id="wisMod" class="stat-modifier">
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">CHARISMA</div>
+                <div class="stat-breakdown">
+                    <div class="stat-field-small">
+                        <label>Base</label>
+                        <input type="number" id="chaBase" class="stat-input-small" min="1" max="30">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Race</label>
+                        <input type="number" id="chaRace" class="stat-input-small" min="-5" max="10">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>ASI</label>
+                        <input type="number" id="chaASI" class="stat-input-small" min="0" max="20">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Feat</label>
+                        <input type="number" id="chaFeat" class="stat-input-small" min="0" max="10">
+                    </div>
+                    <div class="stat-field-small">
+                        <label>Magic</label>
+                        <input type="number" id="chaMagic" class="stat-input-small" min="0" max="10">
+                    </div>
+                </div>
+                <div class="stat-total-box">
+                    <label>Total</label>
+                    <div class="stat-total" id="chaTotal">10</div>
+                </div>
+                <input type="text" id="chaMod" class="stat-modifier">
+            </div>
+        </div>
+
+        <!-- Row 3: Proficiency Bonus, Initiative, Speed, Size, Passive Perception, Heroic Inspiration -->
+        <div class="row-3">
+            <div class="row3-box">
+                <label>PROFICIENCY BONUS</label>
+                <input type="text" id="proficiencyBonus" class="row3-input">
+            </div>
+            <div class="row3-box">
+                <label>INITIATIVE</label>
+                    <input type="number" id="initiative" class="row3-input" min="-10" max="20">
+            </div>
+            <div class="row3-box">
+                <label>SPEED</label>
+                <input type="number" id="speed" class="row3-input" min="0">
+            </div>
+            <div class="row3-box">
+                <label>SIZE</label>
+                <input type="text" id="size" class="row3-input">
+            </div>
+            <div class="row3-box">
+                <label>PASSIVE PERCEPTION</label>
+                <input type="number" id="passivePerception" class="row3-input">
+            </div>
+            <div class="row3-box">
+                <label>HEROIC INSPIRATION</label>
+                <input type="checkbox" id="heroicInspiration" class="row3-checkbox">
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Left Column -->
+            <div class="left-column">
+
+                <!-- Skills -->
+                <div class="skills-section resizable-section" id="skillsSection">
+                    <div class="section-title">
+                        SKILLS
+                        <button type="button" class="add-btn" id="addSkillBtn" title="Add Skill">+</button>
+                    </div>
+                    <div class="skills-list" id="skillsList">
+                        <!-- Skills will be dynamically added here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-column">
+
+                <!-- Weapons & Damage Cantrips -->
+                <div class="weapons-section resizable-section" id="weaponsSection">
+                    <div class="section-title">
+                        WEAPONS & DAMAGE CANTRIPS
+                        <button type="button" class="add-btn" id="addWeaponBtn" title="Add Weapon">+</button>
+                    </div>
+                    <table class="weapons-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Atk Bonus / DC</th>
+                                <th>Damage & Type</th>
+                                <th>Notes</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="weaponsTableBody">
+                            <!-- Weapons will be dynamically added here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Equipment Training & Proficiencies -->
+                <div class="proficiencies-section resizable-section" id="proficienciesSection">
+                    <div class="section-title">EQUIPMENT TRAINING & PROFICIENCIES</div>
+                    <div class="proficiency-categories">
+                        <div class="proficiency-category">
+                            <label>ARMOR</label>
+                            <textarea id="armorProficiencies" rows="2" placeholder="Light, Medium, Heavy, Shields"></textarea>
+                        </div>
+                        <div class="proficiency-category">
+                            <label>WEAPONS</label>
+                            <textarea id="weaponProficiencies" rows="2" placeholder="Simple, Martial"></textarea>
+                        </div>
+                        <div class="proficiency-category">
+                            <label>TOOLS</label>
+                            <textarea id="toolProficiencies" rows="2" placeholder="Tools"></textarea>
+                        </div>
+                        <div class="proficiency-category">
+                            <label>LANGUAGES</label>
+                            <textarea id="languages" rows="2" placeholder="Common, Elvish"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Equipment -->
+                <div class="equipment-section resizable-section" id="equipmentSection">
+                    <div class="section-title">EQUIPMENT</div>
+                    <textarea id="equipment" rows="8" placeholder="List equipment, weapons, and armor..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Sections -->
+        <div class="bottom-sections">
+            <div class="features-section">
+                <div class="section-title">CLASS FEATURES</div>
+                <textarea id="features" rows="6" placeholder="Class features, traits, and abilities..."></textarea>
+            </div>
+            <div class="feats-section">
+                <div class="section-title">FEATS</div>
+                <textarea id="feats" rows="6" placeholder="Feats..."></textarea>
+            </div>
+            <div class="species-traits-section">
+                <div class="section-title">SPECIES TRAITS</div>
+                <textarea id="speciesTraits" rows="6" placeholder="Species traits and features..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 2 -->
+    <div class="character-sheet page-2">
+        <!-- Spellcasting Section -->
+        <div class="spellcasting-section">
+            <div class="section-title">SPELLCASTING</div>
+            <div class="spellcasting-info">
+                <div class="spell-stat">
+                    <label>SPELLCASTING ABILITY</label>
+                    <input type="text" id="spellcastingAbility">
+                </div>
+                <div class="spell-stat">
+                    <label>SPELL SAVE DC</label>
+                    <input type="number" id="spellSaveDC">
+                </div>
+                <div class="spell-stat">
+                    <label>SPELL ATTACK BONUS</label>
+                    <input type="text" id="spellAttackBonus">
+                </div>
+            </div>
+            <div class="spell-slots-section">
+                <div class="section-title">SPELL SLOTS</div>
+                <div class="spell-slots-grid">
+                    <div class="spell-slot-level">
+                        <label>Level 1</label>
+                        <input type="number" id="spellSlots1" min="0" max="20">
+                        <span>/</span>
+                        <input type="number" id="spellSlots1Max" min="0" max="20">
+                    </div>
+                    <div class="spell-slot-level">
+                        <label>Level 2</label>
+                        <input type="number" id="spellSlots2" min="0" max="20">
+                        <span>/</span>
+                        <input type="number" id="spellSlots2Max" min="0" max="20">
+                    </div>
+                    <div class="spell-slot-level">
+                        <label>Level 3</label>
+                        <input type="number" id="spellSlots3" min="0" max="20">
+                        <span>/</span>
+                        <input type="number" id="spellSlots3Max" min="0" max="20">
+                    </div>
+                    <div class="spell-slot-level">
+                        <label>Level 4</label>
+                        <input type="number" id="spellSlots4" min="0" max="20">
+                        <span>/</span>
+                        <input type="number" id="spellSlots4Max" min="0" max="20">
+                    </div>
+                    <div class="spell-slot-level">
+                        <label>Level 5</label>
+                        <input type="number" id="spellSlots5" min="0" max="20">
+                        <span>/</span>
+                        <input type="number" id="spellSlots5Max" min="0" max="20">
+                    </div>
+                    <div class="spell-slot-level">
+                        <label>Level 6</label>
+                        <input type="number" id="spellSlots6" min="0" max="20">
+                        <span>/</span>
+                        <input type="number" id="spellSlots6Max" min="0" max="20">
+                    </div>
+                    <div class="spell-slot-level">
+                        <label>Level 7</label>
+                        <input type="number" id="spellSlots7" min="0" max="20">
+                        <span>/</span>
+                        <input type="number" id="spellSlots7Max" min="0" max="20">
+                    </div>
+                    <div class="spell-slot-level">
+                        <label>Level 8</label>
+                        <input type="number" id="spellSlots8" min="0" max="20">
+                        <span>/</span>
+                        <input type="number" id="spellSlots8Max" min="0" max="20">
+                    </div>
+                    <div class="spell-slot-level">
+                        <label>Level 9</label>
+                        <input type="number" id="spellSlots9" min="0" max="20">
+                        <span>/</span>
+                        <input type="number" id="spellSlots9Max" min="0" max="20">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cantrips & Prepared Spells -->
+        <div class="spells-section">
+            <div class="section-title">
+                CANTRIPS & PREPARED SPELLS
+                <button type="button" class="add-btn" id="addSpellBtn" title="Add Spell">+</button>
+            </div>
+            <table class="spells-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Level</th>
+                        <th>Casting Time</th>
+                        <th>Concentration, Ritual</th>
+                        <th>Range</th>
+                        <th>Required Material</th>
+                        <th>Notes</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="spellsTableBody">
+                    <!-- Spells will be dynamically added here -->
+                </tbody>
+            </table>
+            <div class="known-spells-section">
+                <label>KNOWN SPELLS</label>
+                <textarea id="knownSpells" rows="6" placeholder="List known spells..."></textarea>
+            </div>
+        </div>
+
+        <!-- Equipment & Coins -->
+        <div class="equipment-coins-section">
+            <div class="equipment-detail-section">
+                <div class="section-title">EQUIPMENT</div>
+                <textarea id="equipmentDetail" rows="10" placeholder="Detailed equipment list..."></textarea>
+            </div>
+            <div class="coins-section">
+                <div class="section-title">COINS</div>
+                <div class="coins-grid">
+                    <div class="coin-type">
+                        <label>CP</label>
+                        <input type="number" id="coinCP" min="0">
+                    </div>
+                    <div class="coin-type">
+                        <label>SP</label>
+                        <input type="number" id="coinSP" min="0">
+                    </div>
+                    <div class="coin-type">
+                        <label>EP</label>
+                        <input type="number" id="coinEP" min="0">
+                    </div>
+                    <div class="coin-type">
+                        <label>GP</label>
+                        <input type="number" id="coinGP" min="0">
+                    </div>
+                    <div class="coin-type">
+                        <label>PP</label>
+                        <input type="number" id="coinPP" min="0">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Languages -->
+        <div class="languages-section">
+            <div class="section-title">LANGUAGES</div>
+            <textarea id="languagesPage2" rows="4" placeholder="List languages known..."></textarea>
+        </div>
+
+        <!-- Backstory & Personality -->
+        <div class="backstory-section">
+            <div class="section-title">BACKSTORY & PERSONALITY</div>
+            <textarea id="backstory" rows="8" placeholder="Character backstory, personality traits, ideals, bonds, and flaws..."></textarea>
+        </div>
+
+        <!-- Appearance -->
+        <div class="appearance-section">
+            <div class="section-title">APPEARANCE</div>
+            <textarea id="appearance" rows="6" placeholder="Physical description, age, height, weight, etc..."></textarea>
+        </div>
+
+        <!-- Notes -->
+        <div class="notes-section">
+            <div class="section-title">NOTES</div>
+            <textarea id="notes" rows="6" placeholder="Additional notes..."></textarea>
+        </div>
+    </div>
+
+    <script type="module" src="dist/character-sheet.js"></script>
+</body>
+</html>

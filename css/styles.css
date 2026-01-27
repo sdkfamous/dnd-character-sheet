@@ -1,0 +1,1095 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Times New Roman', serif;
+    background: #f5f5f5;
+    color: #000;
+    padding: 20px;
+    font-size: 11pt;
+    line-height: 1.2;
+}
+
+.save-controls {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.save-button {
+    padding: 8px 16px;
+    border: 2px solid #000;
+    background: white;
+    color: #000;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.save-button:hover {
+    background: #f0f0f0;
+}
+
+.save-button:active {
+    background: #e0e0e0;
+}
+
+.save-status {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.save-status.saved {
+    background: #10b981;
+    color: white;
+}
+
+.save-status.saving {
+    background: #f59e0b;
+    color: white;
+}
+
+.save-status.error {
+    background: #ef4444;
+    color: white;
+}
+
+.character-sheet {
+    background: white;
+    width: 8.5in;
+    min-height: 11in;
+    margin: 0 auto 20px;
+    padding: 0.5in;
+    border: 1px solid #000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Top Row */
+.top-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 2fr;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.top-box {
+    border: 2px solid #000;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.top-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.top-field label {
+    font-size: 7pt;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.top-input {
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 10pt;
+    font-family: inherit;
+    background: white;
+    width: 100%;
+}
+
+.top-input[readonly] {
+    background: #f0f0f0;
+}
+
+.top-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    margin-top: 4px;
+}
+
+/* Top Box 1 - Name, Species, Class, Background, Subclass */
+.top-box-1 {
+    /* Already styled by .top-box */
+}
+
+/* Top Box 2 - Level, XP */
+.top-box-2 {
+    /* Already styled by .top-box */
+}
+
+/* Top Box 3 - Armour Class, Shield */
+.top-box-3 {
+    /* Already styled by .top-box */
+}
+
+/* Top Box 4 - Hit Points, Hit Dice, Death Saves */
+.top-box-4 {
+    gap: 8px;
+}
+
+.hp-group,
+.hitdice-group,
+.death-saves-group {
+    border: 1px solid #000;
+    padding: 4px;
+}
+
+.group-label {
+    font-size: 7pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #000;
+    padding-bottom: 2px;
+}
+
+.hp-fields,
+.hitdice-fields {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+}
+
+.hitdice-fields {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.hp-field,
+.hitdice-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.hp-field label,
+.hitdice-field label {
+    font-size: 7pt;
+    text-transform: uppercase;
+}
+
+.hp-input-small {
+    border: 1px solid #000;
+    padding: 2px 4px;
+    font-size: 10pt;
+    text-align: center;
+    width: 100%;
+}
+
+.hp-input-small[readonly] {
+    background: #f0f0f0;
+}
+
+.death-saves-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.death-saves-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.death-saves-field label {
+    font-size: 7pt;
+    text-transform: uppercase;
+}
+
+.death-checkboxes {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+.death-checkboxes input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    border: 1px solid #000;
+    cursor: pointer;
+}
+
+/* Section Titles */
+.section-title {
+    font-size: 9pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-bottom: 2px solid #000;
+    padding-bottom: 2px;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Row 2: Ability Scores */
+.row-2 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.stat-box {
+    border: 2px solid #000;
+    padding: 4px;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 8pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.stat-breakdown {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2px;
+    margin-bottom: 4px;
+}
+
+.stat-field-small {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.stat-field-small label {
+    font-size: 6pt;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.stat-input-small {
+    width: 100%;
+    border: 1px solid #000;
+    padding: 1px;
+    font-size: 8pt;
+    text-align: center;
+    background: white;
+    box-sizing: border-box;
+}
+
+.stat-total-box {
+    margin: 4px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.stat-total-box label {
+    font-size: 7pt;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.stat-total {
+    border: 1px solid #000;
+    width: 50px;
+    height: 50px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20pt;
+    font-weight: bold;
+    background: #f0f0f0;
+}
+
+.stat-modifier {
+    width: 44px;
+    margin: 4px auto 0;
+    border: 1px solid #000;
+    padding: 2px 0;
+    font-size: 11pt;
+    font-weight: bold;
+    color: #000;
+    text-align: center;
+    background: white;
+    box-sizing: border-box;
+}
+
+/* Row 3: Proficiency Bonus, Initiative, Speed, Size, Passive Perception, Heroic Inspiration */
+.row-3 {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.row3-box {
+    border: 2px solid #000;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.row3-box label {
+    font-size: 7pt;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.row3-input {
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 11pt;
+    font-family: inherit;
+    background: white;
+    width: 100%;
+    text-align: center;
+}
+
+.row3-input[readonly] {
+    background: #f0f0f0;
+}
+
+.row3-checkbox {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    margin: 0 auto;
+    margin-top: 4px;
+}
+
+/* Main Content Layout */
+.main-content {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+/* Left Column - Abilities & Skills */
+.left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+
+/* Resizable Sections */
+.resizable-section {
+    position: relative;
+    resize: horizontal;
+    overflow: auto;
+}
+
+.resizable-section::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: transparent;
+    cursor: ew-resize;
+    z-index: 1;
+}
+
+/* Skills */
+.skills-section {
+    border: 2px solid #000;
+    padding: 8px;
+    min-width: 200px;
+    max-width: 400px;
+    width: 250px;
+}
+
+.add-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid #000;
+    background: white;
+    color: #000;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    transition: background 0.2s;
+}
+
+.add-btn:hover {
+    background: #f0f0f0;
+}
+
+.remove-btn {
+    width: 20px;
+    height: 20px;
+    border: 1px solid #000;
+    background: white;
+    color: #000;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    transition: background 0.2s;
+}
+
+.remove-btn:hover {
+    background: #fee;
+}
+
+.skills-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.skill-row {
+    display: grid;
+    grid-template-columns: 20px 1fr 60px 50px 24px;
+    gap: 6px;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.skill-row input[type="text"] {
+    border: 1px solid #000;
+    padding: 2px 4px;
+    font-size: 9pt;
+    font-family: inherit;
+    width: 100%;
+}
+
+.skill-row select {
+    border: 1px solid #000;
+    padding: 2px 4px;
+    font-size: 8pt;
+    font-family: inherit;
+    width: 100%;
+}
+
+.skill-row label {
+    font-size: 9pt;
+    cursor: pointer;
+}
+
+.skill-ability {
+    font-size: 8pt;
+    color: #666;
+    text-align: center;
+}
+
+.skill-modifier {
+    width: 50px;
+    border: 1px solid #000;
+    padding: 2px;
+    font-size: 9pt;
+    font-weight: bold;
+    text-align: center;
+    background: white;
+    min-width: 40px;
+}
+
+.skill-checkbox {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+}
+
+/* Right Column - Combat Stats */
+.right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.combat-stats-section {
+    border: 2px solid #000;
+    padding: 8px;
+}
+
+.combat-top {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.combat-stat-box {
+    display: flex;
+    flex-direction: column;
+}
+
+.combat-stat-box label {
+    font-size: 8pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+.combat-input {
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 11pt;
+    text-align: center;
+    background: white;
+}
+
+.combat-input[readonly] {
+    background: #f0f0f0;
+}
+
+.hp-section {
+    border: 1px solid #000;
+    padding: 6px;
+    margin-bottom: 8px;
+}
+
+.hp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.hp-header label {
+    font-size: 8pt;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.hp-max {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.hp-max span {
+    font-size: 8pt;
+    text-transform: uppercase;
+}
+
+.hp-input {
+    width: 60px;
+    border: 1px solid #000;
+    padding: 2px 4px;
+    text-align: center;
+}
+
+.hp-current, .hp-temp {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.hp-current span, .hp-temp span {
+    font-size: 8pt;
+    text-transform: uppercase;
+    min-width: 80px;
+}
+
+.hit-dice-section {
+    margin-bottom: 8px;
+}
+
+.hit-dice-section label {
+    font-size: 8pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.death-saves-section {
+    border: 1px solid #000;
+    padding: 6px;
+    margin-bottom: 8px;
+}
+
+.death-saves-header {
+    font-size: 8pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.death-saves-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.death-saves-success label,
+.death-saves-failure label {
+    font-size: 7pt;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.death-checkboxes {
+    display: flex;
+    gap: 8px;
+}
+
+.death-checkboxes input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    border: 1px solid #000;
+    cursor: pointer;
+}
+
+.passive-perception-section {
+    margin-top: 8px;
+}
+
+.passive-perception-section label {
+    font-size: 8pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 2px;
+}
+
+/* Proficiencies */
+.proficiencies-section {
+    border: 2px solid #000;
+    padding: 8px;
+    min-width: 300px;
+    max-width: 800px;
+    width: 100%;
+}
+
+.proficiency-categories {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.proficiency-category label {
+    font-size: 8pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.proficiency-category textarea {
+    width: 100%;
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 9pt;
+    font-family: inherit;
+    resize: vertical;
+}
+
+/* Weapons */
+.weapons-section {
+    border: 2px solid #000;
+    padding: 8px;
+    min-width: 300px;
+    max-width: 800px;
+    width: 100%;
+}
+
+.weapons-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+}
+
+.weapons-table th {
+    border: 1px solid #000;
+    padding: 4px;
+    text-align: left;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 7pt;
+    background: #f0f0f0;
+}
+
+.weapons-table th:last-child {
+    width: 30px;
+}
+
+.weapons-table td {
+    border: 1px solid #000;
+    padding: 2px;
+}
+
+.weapons-table td:last-child {
+    text-align: center;
+    padding: 2px;
+}
+
+.weapons-table input {
+    width: 100%;
+    border: none;
+    padding: 2px 4px;
+    font-size: 9pt;
+    font-family: inherit;
+    background: transparent;
+}
+
+/* Equipment */
+.equipment-section {
+    border: 2px solid #000;
+    padding: 8px;
+    min-width: 300px;
+    max-width: 800px;
+    width: 100%;
+}
+
+.equipment-section textarea {
+    width: 100%;
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 9pt;
+    font-family: inherit;
+    resize: vertical;
+}
+
+/* Bottom Sections */
+.bottom-sections {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.features-section,
+.feats-section,
+.species-traits-section {
+    border: 2px solid #000;
+    padding: 8px;
+}
+
+.features-section textarea,
+.feats-section textarea,
+.species-traits-section textarea {
+    width: 100%;
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 9pt;
+    font-family: inherit;
+    resize: vertical;
+}
+
+/* Page 2 */
+.page-2 {
+    margin-top: 20px;
+}
+
+/* Spellcasting */
+.spellcasting-section {
+    border: 2px solid #000;
+    padding: 8px;
+    margin-bottom: 10px;
+}
+
+.spellcasting-info {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.spell-stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.spell-stat label {
+    font-size: 8pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+.spell-stat input {
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 11pt;
+    text-align: center;
+    background: white;
+}
+
+.spell-stat input[readonly] {
+    background: #f0f0f0;
+}
+
+.spell-slots-section {
+    margin-top: 10px;
+}
+
+.spell-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+.spell-slot-level {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid #000;
+    padding: 4px;
+}
+
+.spell-slot-level label {
+    font-size: 8pt;
+    font-weight: bold;
+    min-width: 50px;
+}
+
+.spell-slot-level input {
+    width: 40px;
+    border: 1px solid #000;
+    padding: 2px;
+    text-align: center;
+    font-size: 10pt;
+}
+
+.spell-slot-level input[readonly] {
+    background: #f0f0f0;
+}
+
+/* Spells Table */
+.spells-section {
+    border: 2px solid #000;
+    padding: 8px;
+    margin-bottom: 10px;
+}
+
+.spells-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+    margin-bottom: 8px;
+}
+
+.spells-table th {
+    border: 1px solid #000;
+    padding: 3px;
+    text-align: left;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 7pt;
+    background: #f0f0f0;
+}
+
+.spells-table th:last-child {
+    width: 30px;
+}
+
+.spells-table td {
+    border: 1px solid #000;
+    padding: 2px;
+}
+
+.spells-table td:last-child {
+    text-align: center;
+    padding: 2px;
+}
+
+.spells-table input {
+    width: 100%;
+    border: none;
+    padding: 2px;
+    font-size: 8pt;
+    font-family: inherit;
+    background: transparent;
+}
+
+.known-spells-section {
+    margin-top: 8px;
+}
+
+.known-spells-section label {
+    font-size: 8pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.known-spells-section textarea {
+    width: 100%;
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 9pt;
+    font-family: inherit;
+    resize: vertical;
+}
+
+/* Equipment & Coins */
+.equipment-coins-section {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.equipment-detail-section {
+    border: 2px solid #000;
+    padding: 8px;
+}
+
+.equipment-detail-section textarea {
+    width: 100%;
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 9pt;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.coins-section {
+    border: 2px solid #000;
+    padding: 8px;
+}
+
+.coins-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.coin-type {
+    display: flex;
+    flex-direction: column;
+}
+
+.coin-type label {
+    font-size: 8pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+.coin-type input {
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 11pt;
+    text-align: center;
+}
+
+/* Backstory */
+.backstory-section {
+    border: 2px solid #000;
+    padding: 8px;
+    margin-bottom: 10px;
+}
+
+.backstory-section textarea {
+    width: 100%;
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 9pt;
+    font-family: inherit;
+    resize: vertical;
+}
+
+/* Languages */
+.languages-section {
+    border: 2px solid #000;
+    padding: 8px;
+    margin-bottom: 10px;
+}
+
+.languages-section textarea {
+    width: 100%;
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 9pt;
+    font-family: inherit;
+    resize: vertical;
+}
+
+/* Appearance */
+.appearance-section {
+    border: 2px solid #000;
+    padding: 8px;
+    margin-bottom: 10px;
+}
+
+.appearance-section textarea {
+    width: 100%;
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 9pt;
+    font-family: inherit;
+    resize: vertical;
+}
+
+/* Notes */
+.notes-section {
+    border: 2px solid #000;
+    padding: 8px;
+}
+
+.notes-section textarea {
+    width: 100%;
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 9pt;
+    font-family: inherit;
+    resize: vertical;
+}
+
+/* Input Focus */
+input:focus,
+textarea:focus {
+    outline: 2px solid #0066cc;
+    outline-offset: -2px;
+}
+
+/* Print Styles */
+@media print {
+    body {
+        background: white;
+        padding: 0;
+    }
+
+    .character-sheet {
+        box-shadow: none;
+        margin: 0;
+        page-break-after: always;
+    }
+
+    .save-status {
+        display: none;
+    }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .character-sheet {
+        width: 100%;
+        max-width: 8.5in;
+    }
+}
