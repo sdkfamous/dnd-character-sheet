@@ -1232,12 +1232,43 @@ textarea:focus {
     transition: background 0.2s;
 }
 
+/* Soft colors for each content group */
+.content-group[data-group="character-info"] .accordion-header {
+    background: #e8f4f8;
+    /* Soft blue */
+}
+
+.content-group[data-group="ability-scores"] .accordion-header {
+    background: #f0e8f4;
+    /* Soft purple */
+}
+
+.content-group[data-group="skills-combat"] .accordion-header {
+    background: #f0a549;
+    /* Soft orange */
+}
+
+.content-group[data-group="spellcasting-spells"] .accordion-header {
+    background: #e8f0e8;
+    /* Soft green */
+}
+
+.content-group[data-group="equipment-coins"] .accordion-header {
+    background: #fff4e8;
+    /* Soft orange */
+}
+
+.content-group[data-group="character-details"] .accordion-header {
+    background: #ea9e9e;
+    /* Soft pink */
+}
+
 .accordion-header:hover {
-    background: #e0e0e0;
+    filter: brightness(0.95);
 }
 
 .accordion-header:active {
-    background: #d0d0d0;
+    filter: brightness(0.9);
 }
 
 /* Accordion Icon */
