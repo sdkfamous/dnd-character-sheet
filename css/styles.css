@@ -44,6 +44,45 @@ body {
     background: #e0e0e0;
 }
 
+.save-button:disabled,
+.save-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #e0e0e0;
+}
+
+.save-button:disabled:hover,
+.save-button.disabled:hover {
+    background: #e0e0e0;
+}
+
+/* Accessibility */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Focus indicators for accessibility */
+input:focus,
+textarea:focus,
+select:focus,
+button:focus {
+    outline: 2px solid #0066cc;
+    outline-offset: 2px;
+}
+
+button:focus-visible {
+    outline: 2px solid #0066cc;
+    outline-offset: 2px;
+}
+
 .save-status {
     padding: 8px 16px;
     border-radius: 4px;
@@ -1091,5 +1130,74 @@ textarea:focus {
     .character-sheet {
         width: 100%;
         max-width: 8.5in;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+        font-size: 10pt;
+    }
+
+    .save-controls {
+        top: 0;
+        right: 0;
+        left: 0;
+        justify-content: flex-end;
+        padding: 4px 8px;
+        gap: 6px;
+    }
+
+    .character-sheet {
+        width: 100%;
+        max-width: 100%;
+        padding: 8px;
+        border-width: 1px;
+    }
+
+    .top-row {
+        grid-template-columns: 1fr;
+    }
+
+    .row-2 {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto;
+    }
+
+    .row-3 {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .main-content {
+        flex-direction: column;
+    }
+
+    .skills-section,
+    .weapons-section,
+    .proficiencies-section,
+    .equipment-section {
+        width: 100% !important;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .resizable-section {
+        resize: none;
+    }
+
+    .bottom-sections {
+        grid-template-columns: 1fr;
+    }
+
+    .spellcasting-info {
+        grid-template-columns: 1fr;
+    }
+
+    .spell-slots-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .equipment-coins-section {
+        grid-template-columns: 1fr;
     }
 }
