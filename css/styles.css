@@ -1154,6 +1154,7 @@ textarea:focus {
         width: 100%;
         max-width: 100%;
         padding: 8px;
+        padding-top: 60px;
         border-width: 1px;
     }
 
