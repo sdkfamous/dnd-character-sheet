@@ -1,4 +1,5 @@
-"use strict";
+// Import Google Drive Manager
+import { GoogleDriveManager } from './google-drive-manager.js';
 // Layout Manager Class
 class LayoutManager {
     constructor(initialLayout) {
@@ -142,6 +143,10 @@ class CharacterSheet {
         this.historyIndex = -1;
         this.MAX_HISTORY = 50;
         this.historyTimeout = null;
+        // Google Drive integration
+        this.googleDriveManager = null;
+        this.currentDriveFileId = null;
+        this.APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwVqKRYFicA3JSB3RrNZWMjfupGV2q-MhS-BpZ_zdoRJC0nZGfUpDGgAUcgi3I7etKeLg/exec';
         // Initialize layout manager first (will be updated with saved layout in loadData)
         this.layoutManager = new LayoutManager();
         this.layoutManager.setSaveCallback(() => {
@@ -151,6 +156,7 @@ class CharacterSheet {
         this.data = this.loadData();
         // Initialize history with current state
         this.pushHistory();
+        this.initializeGoogleDrive();
         this.initializeEventListeners();
         this.renderSkills();
         this.renderWeapons();
@@ -507,15 +513,42 @@ class CharacterSheet {
         if (addSpellBtn) {
             addSpellBtn.addEventListener('click', () => this.addSpell());
         }
-        // Save button
-        const saveBtn = document.getElementById('saveBtn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', () => this.saveData());
+        // Google Drive buttons
+        const saveToDriveBtn = document.getElementById('saveToDriveBtn');
+        if (saveToDriveBtn) {
+            saveToDriveBtn.addEventListener('click', () => this.saveToGoogleDrive());
         }
-        // Load button
-        const loadBtn = document.getElementById('loadBtn');
-        if (loadBtn) {
-            loadBtn.addEventListener('click', () => this.loadFromFile());
+        const saveAsNewBtn = document.getElementById('saveAsNewBtn');
+        if (saveAsNewBtn) {
+            saveAsNewBtn.addEventListener('click', () => this.saveAsNewToGoogleDrive());
+        }
+        const loadFromDriveBtn = document.getElementById('loadFromDriveBtn');
+        if (loadFromDriveBtn) {
+            loadFromDriveBtn.addEventListener('click', () => this.showGoogleDriveFilePicker());
+        }
+        // Modal close buttons
+        const modal = document.getElementById('googleDriveModal');
+        const modalClose = modal?.querySelector('.modal-close');
+        const modalCloseBtn = modal?.querySelector('.modal-close-btn');
+        if (modalClose) {
+            modalClose.addEventListener('click', () => {
+                if (modal)
+                    modal.style.display = 'none';
+            });
+        }
+        if (modalCloseBtn) {
+            modalCloseBtn.addEventListener('click', () => {
+                if (modal)
+                    modal.style.display = 'none';
+            });
+        }
+        // Close modal when clicking outside
+        if (modal) {
+            window.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
         }
         // Undo/Redo buttons
         const undoBtn = document.getElementById('undoBtn');
@@ -1004,109 +1037,6 @@ class CharacterSheet {
         this.renderWeapons();
         this.renderSpells();
     }
-    saveData() {
-        this.showSaveStatus('saving', 'Saving...');
-        try {
-            // Ensure all proficiency fields are captured from DOM before saving
-            const armorProficiencies = document.getElementById('armorProficiencies');
-            if (armorProficiencies) {
-                this.data.armorProficiencies = armorProficiencies.value;
-            }
-            const weaponProficiencies = document.getElementById('weaponProficiencies');
-            if (weaponProficiencies)
-                this.data.weaponProficiencies = weaponProficiencies.value;
-            const toolProficiencies = document.getElementById('toolProficiencies');
-            if (toolProficiencies)
-                this.data.toolProficiencies = toolProficiencies.value;
-            const languages = document.getElementById('languages');
-            if (languages)
-                this.data.languages = languages.value;
-            const equipment = document.getElementById('equipment');
-            if (equipment)
-                this.data.equipment = equipment.value;
-            // Capture current layout state from DOM before saving
-            const skillsSection = document.getElementById('skillsSection');
-            const weaponsSection = document.getElementById('weaponsSection');
-            const proficienciesSection = document.getElementById('proficienciesSection');
-            const equipmentSection = document.getElementById('equipmentSection');
-            const currentLayout = {
-                skillsWidth: skillsSection ? skillsSection.offsetWidth : 250,
-                weaponsWidth: weaponsSection ? weaponsSection.offsetWidth : 0,
-                proficienciesWidth: proficienciesSection ? proficienciesSection.offsetWidth : 0,
-                equipmentWidth: equipmentSection ? equipmentSection.offsetWidth : 0
-            };
-            // Update layout manager with current state
-            this.layoutManager.setLayout(currentLayout);
-            // Save to file using File System Access API
-            this.saveToFile();
-        }
-        catch (e) {
-            console.error('Error saving data:', e);
-            this.showSaveStatus('error', 'Save failed');
-        }
-    }
-    async saveToFile() {
-        try {
-            // Create the new structure with character-definition and sheet-layout
-            const fileData = {
-                'character-definition': this.data,
-                'sheet-layout': this.layoutManager.getLayout()
-            };
-            const dataToSave = JSON.stringify(fileData, null, 2);
-            const blob = new Blob([dataToSave], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            // Check if File System Access API is supported
-            if ('showSaveFilePicker' in window) {
-                try {
-                    const fileHandle = await window.showSaveFilePicker({
-                        suggestedName: 'character-sheet.json',
-                        types: [{
-                                description: 'JSON files',
-                                accept: { 'application/json': ['.json'] }
-                            }]
-                    });
-                    const writable = await fileHandle.createWritable();
-                    await writable.write(dataToSave);
-                    await writable.close();
-                    this.showSaveStatus('saved', 'Saved to file');
-                    setTimeout(() => {
-                        const statusEl = document.getElementById('saveStatus');
-                        if (statusEl) {
-                            statusEl.textContent = '';
-                            statusEl.className = 'save-status';
-                        }
-                    }, 2000);
-                    return;
-                }
-                catch (err) {
-                    // User cancelled or error - fall back to download
-                    if (err.name !== 'AbortError') {
-                        console.error('Error saving file:', err);
-                    }
-                }
-            }
-            // Fallback: Download file
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'character-sheet.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            this.showSaveStatus('saved', 'Downloaded');
-            setTimeout(() => {
-                const statusEl = document.getElementById('saveStatus');
-                if (statusEl) {
-                    statusEl.textContent = '';
-                    statusEl.className = 'save-status';
-                }
-            }, 2000);
-        }
-        catch (e) {
-            console.error('Error saving to file:', e);
-            this.showSaveStatus('error', 'Save failed');
-        }
-    }
     renderSkills() {
         const skillsList = document.getElementById('skillsList');
         if (!skillsList)
@@ -1260,149 +1190,6 @@ class CharacterSheet {
         row.appendChild(removeTd);
         return row;
     }
-    async loadFromFile() {
-        this.showSaveStatus('saving', 'Loading...');
-        try {
-            // Check if File System Access API is supported
-            if ('showOpenFilePicker' in window) {
-                try {
-                    const [fileHandle] = await window.showOpenFilePicker({
-                        types: [{
-                                description: 'JSON files',
-                                accept: { 'application/json': ['.json'] }
-                            }]
-                    });
-                    const file = await fileHandle.getFile();
-                    const text = await file.text();
-                    try {
-                        const fileData = JSON.parse(text);
-                        console.log('Loaded data:', fileData);
-                        // Handle both old format (direct data) and new format (with character-definition and sheet-layout)
-                        let characterData;
-                        let layoutData;
-                        if (fileData['character-definition'] && fileData['sheet-layout']) {
-                            // New format
-                            characterData = fileData['character-definition'];
-                            layoutData = fileData['sheet-layout'];
-                        }
-                        else {
-                            // Old format - just character data
-                            characterData = fileData;
-                        }
-                        // Apply layout if available
-                        if (layoutData) {
-                            this.layoutManager.setLayout(layoutData);
-                        }
-                        // Validate and merge with defaults
-                        this.data = this.validateAndMigrateData(characterData);
-                        // Reset history after loading
-                        this.history = [];
-                        this.historyIndex = -1;
-                        this.pushHistory();
-                        this.updateAll();
-                        this.updateHistoryButtons();
-                        this.showSaveStatus('saved', 'Loaded from file');
-                        setTimeout(() => {
-                            const statusEl = document.getElementById('saveStatus');
-                            if (statusEl) {
-                                statusEl.textContent = '';
-                                statusEl.className = 'save-status';
-                            }
-                        }, 2000);
-                    }
-                    catch (parseErr) {
-                        console.error('Error parsing JSON:', parseErr);
-                        this.showSaveStatus('error', 'Invalid JSON file');
-                    }
-                    return;
-                }
-                catch (err) {
-                    // User cancelled or error
-                    if (err.name === 'AbortError') {
-                        // User cancelled - don't show error
-                        const statusEl = document.getElementById('saveStatus');
-                        if (statusEl) {
-                            statusEl.textContent = '';
-                            statusEl.className = 'save-status';
-                        }
-                        return;
-                    }
-                    console.error('Error loading file:', err);
-                    this.showSaveStatus('error', `Load failed: ${err.message || 'Unknown error'}`);
-                    return;
-                }
-            }
-            // Fallback: Use file input
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json,application/json';
-            input.onchange = (e) => {
-                const target = e.target;
-                const file = target.files?.[0];
-                if (!file) {
-                    this.showSaveStatus('error', 'No file selected');
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onerror = () => {
-                    console.error('FileReader error');
-                    this.showSaveStatus('error', 'Error reading file');
-                };
-                reader.onload = (event) => {
-                    try {
-                        const text = event.target?.result;
-                        if (!text) {
-                            throw new Error('File is empty');
-                        }
-                        const fileData = JSON.parse(text);
-                        console.log('Loaded data:', fileData);
-                        // Handle both old format (direct data) and new format (with character-definition and sheet-layout)
-                        let characterData;
-                        let layoutData;
-                        if (fileData['character-definition'] && fileData['sheet-layout']) {
-                            // New format
-                            characterData = fileData['character-definition'];
-                            layoutData = fileData['sheet-layout'];
-                        }
-                        else {
-                            // Old format - just character data
-                            characterData = fileData;
-                        }
-                        // Apply layout if available
-                        if (layoutData) {
-                            this.layoutManager.setLayout(layoutData);
-                        }
-                        // Validate and merge with defaults
-                        this.data = this.validateAndMigrateData(characterData);
-                        // Reset history after loading
-                        this.history = [];
-                        this.historyIndex = -1;
-                        this.pushHistory();
-                        this.updateAll();
-                        this.updateHistoryButtons();
-                        this.showSaveStatus('saved', 'Loaded from file');
-                        setTimeout(() => {
-                            const statusEl = document.getElementById('saveStatus');
-                            if (statusEl) {
-                                statusEl.textContent = '';
-                                statusEl.className = 'save-status';
-                            }
-                        }, 2000);
-                    }
-                    catch (err) {
-                        console.error('Error parsing file:', err);
-                        this.showSaveStatus('error', `Invalid file: ${err.message || 'Invalid JSON'}`);
-                    }
-                };
-                reader.readAsText(file);
-            };
-            input.click();
-        }
-        catch (e) {
-            console.error('Error loading from file:', e);
-            this.showSaveStatus('error', `Load failed: ${e.message || 'Unknown error'}`);
-        }
-    }
     addWeapon() {
         const newWeapon = {
             id: this.nextWeaponId.toString(),
@@ -1501,6 +1288,291 @@ class CharacterSheet {
             statusEl.textContent = message;
             statusEl.className = `save-status ${status}`;
         }
+    }
+    // Google Drive Integration Methods
+    initializeGoogleDrive() {
+        // Only initialize if Apps Script URL is configured
+        if (this.APPS_SCRIPT_URL) {
+            try {
+                this.googleDriveManager = new GoogleDriveManager(this.APPS_SCRIPT_URL);
+            }
+            catch (error) {
+                console.error('Failed to initialize Google Drive manager:', error);
+            }
+        }
+    }
+    async saveToGoogleDrive() {
+        if (!this.googleDriveManager) {
+            this.showSaveStatus('error', 'Google Drive not configured. Please set APPS_SCRIPT_URL.');
+            return;
+        }
+        this.setDriveButtonsEnabled(false);
+        this.showSaveStatus('saving', 'Saving to Google Drive...');
+        try {
+            // Prepare data to save
+            const fileData = {
+                'character-definition': this.data,
+                'sheet-layout': this.layoutManager.getLayout()
+            };
+            const dataToSave = JSON.stringify(fileData, null, 2);
+            const fileName = this.data.characterName
+                ? `${this.data.characterName}-character-sheet.json`
+                : 'character-sheet.json';
+            const result = await this.googleDriveManager.saveToGoogleDrive(fileName, dataToSave, this.currentDriveFileId || undefined);
+            this.currentDriveFileId = result.fileId;
+            this.showSaveStatus('saved', 'Saved to Google Drive');
+            setTimeout(() => {
+                const statusEl = document.getElementById('saveStatus');
+                if (statusEl) {
+                    statusEl.textContent = '';
+                    statusEl.className = 'save-status';
+                }
+            }, 2000);
+        }
+        catch (error) {
+            console.error('Error saving to Google Drive:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            this.showSaveStatus('error', `Failed to save to Google Drive: ${errorMessage}`);
+        }
+        finally {
+            this.setDriveButtonsEnabled(true);
+        }
+    }
+    async saveAsNewToGoogleDrive() {
+        if (!this.googleDriveManager) {
+            this.showSaveStatus('error', 'Google Drive not configured. Please set APPS_SCRIPT_URL.');
+            return;
+        }
+        // Prompt for filename
+        const currentName = this.data.characterName || 'character';
+        const suggestedName = `${currentName}-character-sheet.json`;
+        const fileName = prompt('Enter filename for the new character sheet:', suggestedName);
+        if (!fileName) {
+            // User cancelled
+            return;
+        }
+        // Validate filename
+        const trimmedFileName = fileName.trim();
+        if (!trimmedFileName) {
+            this.showSaveStatus('error', 'Filename cannot be empty');
+            return;
+        }
+        // Ensure .json extension
+        const finalFileName = trimmedFileName.endsWith('.json') ? trimmedFileName : `${trimmedFileName}.json`;
+        this.setDriveButtonsEnabled(false);
+        this.showSaveStatus('saving', 'Saving as new file...');
+        try {
+            // Prepare data to save
+            const fileData = {
+                'character-definition': this.data,
+                'sheet-layout': this.layoutManager.getLayout()
+            };
+            const dataToSave = JSON.stringify(fileData, null, 2);
+            // Save without fileId to create a new file
+            const result = await this.googleDriveManager.saveToGoogleDrive(finalFileName, dataToSave, undefined // No fileId = create new file
+            );
+            // Update current file ID to the new file
+            this.currentDriveFileId = result.fileId;
+            this.showSaveStatus('saved', 'Saved as new file');
+            setTimeout(() => {
+                const statusEl = document.getElementById('saveStatus');
+                if (statusEl) {
+                    statusEl.textContent = '';
+                    statusEl.className = 'save-status';
+                }
+            }, 2000);
+        }
+        catch (error) {
+            console.error('Error saving as new to Google Drive:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            this.showSaveStatus('error', `Failed to save: ${errorMessage}`);
+        }
+        finally {
+            this.setDriveButtonsEnabled(true);
+        }
+    }
+    async showGoogleDriveFilePicker() {
+        if (!this.googleDriveManager) {
+            this.showSaveStatus('error', 'Google Drive not configured. Please set APPS_SCRIPT_URL.');
+            return;
+        }
+        this.setDriveButtonsEnabled(false);
+        this.showSaveStatus('saving', 'Loading file list...');
+        try {
+            const files = await this.googleDriveManager.listFiles();
+            this.displayFilePickerModal(files);
+        }
+        catch (error) {
+            console.error('Error loading file list:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            this.showSaveStatus('error', `Failed to load files: ${errorMessage}`);
+        }
+        finally {
+            this.setDriveButtonsEnabled(true);
+        }
+    }
+    displayFilePickerModal(files) {
+        const modal = document.getElementById('googleDriveModal');
+        const fileList = document.getElementById('googleDriveFileList');
+        if (!modal || !fileList) {
+            this.showSaveStatus('error', 'File picker modal not found');
+            return;
+        }
+        // Clear previous list
+        fileList.innerHTML = '';
+        if (files.length === 0) {
+            fileList.innerHTML = '<div class="no-files">No character sheets found in Google Drive</div>';
+        }
+        else {
+            files.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'drive-file-item';
+                const modifiedDate = new Date(file.modifiedTime);
+                const dateStr = modifiedDate.toLocaleDateString() + ' ' + modifiedDate.toLocaleTimeString();
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <div class="file-name">${this.escapeHtml(file.name)}</div>
+                        <div class="file-date">Modified: ${dateStr}</div>
+                    </div>
+                    <div class="file-actions">
+                        <button type="button" class="load-file-btn" data-file-id="${file.id}">Load</button>
+                        <button type="button" class="delete-file-btn" data-file-id="${file.id}">Delete</button>
+                    </div>
+                `;
+                // Load button
+                const loadBtn = fileItem.querySelector('.load-file-btn');
+                if (loadBtn) {
+                    loadBtn.addEventListener('click', () => this.loadFromGoogleDrive(file.id));
+                }
+                // Delete button
+                const deleteBtn = fileItem.querySelector('.delete-file-btn');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', () => this.deleteGoogleDriveFile(file.id, file.name));
+                }
+                fileList.appendChild(fileItem);
+            });
+        }
+        // Show modal
+        modal.style.display = 'block';
+        // Clear status
+        const statusEl = document.getElementById('saveStatus');
+        if (statusEl) {
+            statusEl.textContent = '';
+            statusEl.className = 'save-status';
+        }
+    }
+    async loadFromGoogleDrive(fileId) {
+        if (!this.googleDriveManager) {
+            this.showSaveStatus('error', 'Google Drive not configured');
+            return;
+        }
+        this.setDriveButtonsEnabled(false);
+        this.showSaveStatus('saving', 'Loading from Google Drive...');
+        try {
+            const result = await this.googleDriveManager.loadFromGoogleDrive(fileId);
+            const fileData = JSON.parse(result.content);
+            // Handle both old format and new format
+            let characterData;
+            let layoutData;
+            if (fileData['character-definition'] && fileData['sheet-layout']) {
+                characterData = fileData['character-definition'];
+                layoutData = fileData['sheet-layout'];
+            }
+            else {
+                characterData = fileData;
+            }
+            // Apply layout if available
+            if (layoutData) {
+                this.layoutManager.setLayout(layoutData);
+            }
+            // Validate and merge with defaults
+            this.data = this.validateAndMigrateData(characterData);
+            this.currentDriveFileId = fileId;
+            // Reset history after loading
+            this.history = [];
+            this.historyIndex = -1;
+            this.pushHistory();
+            // Update UI
+            this.renderSkills();
+            this.renderWeapons();
+            this.renderSpells();
+            this.updateAll();
+            this.updateHistoryButtons();
+            // Close modal
+            const modal = document.getElementById('googleDriveModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            this.showSaveStatus('saved', 'Loaded from Google Drive');
+            setTimeout(() => {
+                const statusEl = document.getElementById('saveStatus');
+                if (statusEl) {
+                    statusEl.textContent = '';
+                    statusEl.className = 'save-status';
+                }
+            }, 2000);
+        }
+        catch (error) {
+            console.error('Error loading from Google Drive:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            this.showSaveStatus('error', `Failed to load: ${errorMessage}`);
+        }
+        finally {
+            this.setDriveButtonsEnabled(true);
+        }
+    }
+    async deleteGoogleDriveFile(fileId, fileName) {
+        if (!this.googleDriveManager) {
+            this.showSaveStatus('error', 'Google Drive not configured');
+            return;
+        }
+        if (!confirm(`Are you sure you want to delete "${fileName}"?`)) {
+            return;
+        }
+        this.setDriveButtonsEnabled(false);
+        try {
+            await this.googleDriveManager.deleteFile(fileId);
+            // If this was the current file, clear the file ID
+            if (this.currentDriveFileId === fileId) {
+                this.currentDriveFileId = null;
+            }
+            // Refresh file list
+            this.showGoogleDriveFilePicker();
+            this.showSaveStatus('saved', 'File deleted');
+        }
+        catch (error) {
+            console.error('Error deleting file:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            this.showSaveStatus('error', `Failed to delete: ${errorMessage}`);
+            this.setDriveButtonsEnabled(true);
+        }
+    }
+    setDriveButtonsEnabled(enabled) {
+        const saveToDriveBtn = document.getElementById('saveToDriveBtn');
+        const saveAsNewBtn = document.getElementById('saveAsNewBtn');
+        const loadFromDriveBtn = document.getElementById('loadFromDriveBtn');
+        if (saveToDriveBtn) {
+            saveToDriveBtn.disabled = !enabled;
+        }
+        if (saveAsNewBtn) {
+            saveAsNewBtn.disabled = !enabled;
+        }
+        if (loadFromDriveBtn) {
+            loadFromDriveBtn.disabled = !enabled;
+        }
+        // Also disable buttons within the modal
+        const modal = document.getElementById('googleDriveModal');
+        if (modal) {
+            const loadButtons = modal.querySelectorAll('.load-file-btn');
+            const deleteButtons = modal.querySelectorAll('.delete-file-btn');
+            loadButtons.forEach(btn => btn.disabled = !enabled);
+            deleteButtons.forEach(btn => btn.disabled = !enabled);
+        }
+    }
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 }
 // Simple Accordion Function
