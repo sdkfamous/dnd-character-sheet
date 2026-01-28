@@ -987,13 +987,29 @@ class CharacterSheet {
 
         abilities.forEach(ability => {
             sources.forEach(source => {
-                // Capitalize first letter for field name (e.g., 'base' -> 'Base')
-                const fieldName = `${ability}${source.charAt(0).toUpperCase() + source.slice(1)}`;
+                // Handle special casing for ASI (all caps in HTML)
+                let fieldSuffix: string;
+                if (source === 'asi') {
+                    fieldSuffix = 'ASI'; // Match HTML id pattern
+                } else {
+                    fieldSuffix = source.charAt(0).toUpperCase() + source.slice(1);
+                }
+                const fieldName = `${ability}${fieldSuffix}`;
+
                 this.addInputListener(fieldName, (v) => {
-                    // Base has default of 10, others default to 0
-                    const defaultValue = source === 'base' ? 10 : 0;
-                    const value = this.validateAbilityScore(parseInt(v) || defaultValue);
-                    this.data.abilityScores[ability][source] = value;
+                    // Parse the value, allowing empty string to be treated as 0
+                    const parsedValue = v === '' ? 0 : parseInt(v);
+
+                    if (source === 'base') {
+                        // Base score: default 10, minimum 1, maximum 30
+                        const value = isNaN(parsedValue) ? 10 : Math.max(1, Math.min(30, parsedValue));
+                        this.data.abilityScores[ability][source] = value;
+                    } else {
+                        // Modifiers (race, asi, feat, magic): can be 0 or negative, validate range
+                        const value = isNaN(parsedValue) ? 0 : Math.max(-10, Math.min(20, parsedValue));
+                        this.data.abilityScores[ability][source] = value;
+                    }
+
                     this.updateAbilityScore(ability);
                     this.debouncedPushHistory();
                 });

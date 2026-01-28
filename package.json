@@ -9,9 +9,14 @@
     "serve": "python3 -m http.server 8000"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.3.13",
     "typescript": "^5.3.3"
   },
-  "keywords": ["dnd", "character-sheet", "dungeons-and-dragons"],
+  "keywords": [
+    "dnd",
+    "character-sheet",
+    "dungeons-and-dragons"
+  ],
   "author": "",
   "license": "MIT"
 }
