@@ -10,11 +10,33 @@
 
 <body>
     <div class="save-controls">
-        <button type="button" id="saveBtn" class="save-button">Save</button>
-        <button type="button" id="loadBtn" class="save-button">Load</button>
+        <div class="save-status" id="saveStatus"></div>
+        <button type="button" id="saveToDriveBtn" class="save-button drive-button"
+            title="Save to Google Drive">Save</button>
+        <button type="button" id="saveAsNewBtn" class="save-button drive-button-secondary" title="Save as new file">Save
+            As New</button>
+        <button type="button" id="loadFromDriveBtn" class="save-button drive-button"
+            title="Load from Google Drive">Load</button>
         <button type="button" id="undoBtn" class="save-button" title="Undo (Ctrl+Z)">Undo</button>
         <button type="button" id="redoBtn" class="save-button" title="Redo (Ctrl+Y)">Redo</button>
-        <div class="save-status" id="saveStatus"></div>
+    </div>
+
+    <!-- Google Drive File Picker Modal -->
+    <div id="googleDriveModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Select Character Sheet from Google Drive</h2>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="googleDriveFileList" class="drive-file-list">
+                    <!-- File list will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-close-btn">Close</button>
+            </div>
+        </div>
     </div>
 
     <!-- Page 1 -->

@@ -5,10 +5,13 @@ A modern, interactive character sheet for D&D 5th Edition with Google Drive inte
 ## Features
 
 - Interactive character sheet for D&D 5e
-- Local storage for offline use
-- Google Drive integration (coming soon)
+- Local file storage (File System Access API)
+- **Google Drive cloud storage** (via Google Apps Script)
+- Dynamic lists (skills, weapons, spells)
+- Resizable sections with layout persistence
+- Undo/Redo functionality
 - TypeScript for type safety
-- Responsive design
+- Responsive design (mobile-friendly)
 
 ## Development
 
@@ -49,12 +52,26 @@ The project uses GitHub Actions to automatically:
 
 Just push your TypeScript code to the `main` branch, and GitHub Actions will handle the rest.
 
+## Google Drive Setup
+
+To enable Google Drive cloud storage, see [SETUP.md](SETUP.md) for detailed instructions on deploying the Google Apps Script backend.
+
+Quick steps:
+1. Create a Google Apps Script project
+2. Copy `apps-script/Code.gs` to your Apps Script project
+3. Deploy as a Web App
+4. Add the Web App URL to `src/character-sheet.ts` (set `APPS_SCRIPT_URL`)
+
 ## Project Structure
 
 ```
-├── src/           # TypeScript source files
-├── dist/          # Compiled JavaScript (generated)
-├── css/           # Stylesheets
-├── index.html     # Main HTML file
-└── .github/       # GitHub Actions workflows
+├── src/                    # TypeScript source files
+│   ├── character-sheet.ts  # Main character sheet logic
+│   └── google-drive-manager.ts  # Google Drive API client
+├── apps-script/            # Google Apps Script backend
+│   └── Code.gs             # Apps Script code template
+├── dist/                   # Compiled JavaScript (generated)
+├── css/                    # Stylesheets
+├── index.html              # Main HTML file
+└── .github/                # GitHub Actions workflows
 ```
