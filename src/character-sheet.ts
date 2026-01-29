@@ -328,7 +328,6 @@ class CharacterSheet {
     // Google Drive integration
     private googleDriveManager: GoogleDriveManager | null = null;
     private currentDriveFileId: string | null = null;
-    private readonly APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwVqKRYFicA3JSB3RrNZWMjfupGV2q-MhS-BpZ_zdoRJC0nZGfUpDGgAUcgi3I7etKeLg/exec';
 
     constructor() {
         // Initialize layout manager first (will be updated with saved layout in loadData)
@@ -715,6 +714,45 @@ class CharacterSheet {
 
 
         // Google Drive buttons
+        const signInBtn = document.getElementById('signInBtn');
+        if (signInBtn) {
+            signInBtn.addEventListener('click', async () => {
+                if (this.googleDriveManager) {
+                    try {
+                        await this.googleDriveManager.requestAccessToken();
+                        this.showSaveStatus('saved', 'Signed in successfully');
+                        setTimeout(() => {
+                            const statusEl = document.getElementById('saveStatus');
+                            if (statusEl) {
+                                statusEl.textContent = '';
+                                statusEl.className = 'save-status';
+                            }
+                        }, 2000);
+                    } catch (error) {
+                        console.error('Sign-in error:', error);
+                        this.showSaveStatus('error', 'Failed to sign in');
+                    }
+                }
+            });
+        }
+
+        const signOutBtn = document.getElementById('signOutBtn');
+        if (signOutBtn) {
+            signOutBtn.addEventListener('click', () => {
+                if (this.googleDriveManager) {
+                    this.googleDriveManager.signOut();
+                    this.showSaveStatus('saved', 'Signed out');
+                    setTimeout(() => {
+                        const statusEl = document.getElementById('saveStatus');
+                        if (statusEl) {
+                            statusEl.textContent = '';
+                            statusEl.className = 'save-status';
+                        }
+                    }, 2000);
+                }
+            });
+        }
+
         const saveToDriveBtn = document.getElementById('saveToDriveBtn');
         if (saveToDriveBtn) {
             saveToDriveBtn.addEventListener('click', () => this.saveToGoogleDrive());
@@ -1532,19 +1570,50 @@ class CharacterSheet {
     // Google Drive Integration Methods
 
     private initializeGoogleDrive(): void {
-        // Only initialize if Apps Script URL is configured
-        if (this.APPS_SCRIPT_URL) {
-            try {
-                this.googleDriveManager = new GoogleDriveManager(this.APPS_SCRIPT_URL);
-            } catch (error) {
-                console.error('Failed to initialize Google Drive manager:', error);
-            }
+        try {
+            this.googleDriveManager = new GoogleDriveManager();
+            
+            // Listen for sign-in/sign-out events
+            window.addEventListener('google-signed-in', () => {
+                this.updateDriveButtonVisibility();
+                this.showSaveStatus('saved', 'Signed in to Google Drive');
+                setTimeout(() => {
+                    const statusEl = document.getElementById('saveStatus');
+                    if (statusEl) {
+                        statusEl.textContent = '';
+                        statusEl.className = 'save-status';
+                    }
+                }, 2000);
+            });
+            
+            window.addEventListener('google-signed-out', () => this.updateDriveButtonVisibility());
+            
+            // Initial button visibility
+            this.updateDriveButtonVisibility();
+        } catch (error) {
+            console.error('Failed to initialize Google Drive manager:', error);
         }
     }
 
+    private updateDriveButtonVisibility(): void {
+        const signInBtn = document.getElementById('signInBtn');
+        const signOutBtn = document.getElementById('signOutBtn');
+        const saveToDriveBtn = document.getElementById('saveToDriveBtn');
+        const saveAsNewBtn = document.getElementById('saveAsNewBtn');
+        const loadFromDriveBtn = document.getElementById('loadFromDriveBtn');
+
+        const isSignedIn = this.googleDriveManager?.isSignedIn() || false;
+
+        if (signInBtn) signInBtn.style.display = isSignedIn ? 'none' : 'inline-block';
+        if (signOutBtn) signOutBtn.style.display = isSignedIn ? 'inline-block' : 'none';
+        if (saveToDriveBtn) saveToDriveBtn.style.display = isSignedIn ? 'inline-block' : 'none';
+        if (saveAsNewBtn) saveAsNewBtn.style.display = isSignedIn ? 'inline-block' : 'none';
+        if (loadFromDriveBtn) loadFromDriveBtn.style.display = isSignedIn ? 'inline-block' : 'none';
+    }
+
     private async saveToGoogleDrive(): Promise<void> {
-        if (!this.googleDriveManager) {
-            this.showSaveStatus('error', 'Google Drive not configured. Please set APPS_SCRIPT_URL.');
+        if (!this.googleDriveManager || !this.googleDriveManager.isSignedIn()) {
+            this.showSaveStatus('error', 'Please sign in to Google Drive first');
             return;
         }
 
@@ -1588,8 +1657,8 @@ class CharacterSheet {
     }
 
     private async saveAsNewToGoogleDrive(): Promise<void> {
-        if (!this.googleDriveManager) {
-            this.showSaveStatus('error', 'Google Drive not configured. Please set APPS_SCRIPT_URL.');
+        if (!this.googleDriveManager || !this.googleDriveManager.isSignedIn()) {
+            this.showSaveStatus('error', 'Please sign in to Google Drive first');
             return;
         }
 
@@ -1652,8 +1721,8 @@ class CharacterSheet {
     }
 
     private async showGoogleDriveFilePicker(): Promise<void> {
-        if (!this.googleDriveManager) {
-            this.showSaveStatus('error', 'Google Drive not configured. Please set APPS_SCRIPT_URL.');
+        if (!this.googleDriveManager || !this.googleDriveManager.isSignedIn()) {
+            this.showSaveStatus('error', 'Please sign in to Google Drive first');
             return;
         }
 

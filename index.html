@@ -6,17 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>D&D 5e Character Sheet</title>
     <link rel="stylesheet" href="css/styles.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body>
     <div class="save-controls">
         <div class="save-status" id="saveStatus"></div>
-        <button type="button" id="saveToDriveBtn" class="save-button drive-button"
-            title="Save to Google Drive">Save</button>
-        <button type="button" id="saveAsNewBtn" class="save-button drive-button-secondary" title="Save as new file">Save
-            As New</button>
-        <button type="button" id="loadFromDriveBtn" class="save-button drive-button"
-            title="Load from Google Drive">Load</button>
+        <button type="button" id="signInBtn" class="save-button drive-button" title="Sign in with Google" style="display: none;">Sign In</button>
+        <button type="button" id="signOutBtn" class="save-button" title="Sign out" style="display: none;">Sign Out</button>
+        <button type="button" id="saveToDriveBtn" class="save-button drive-button" title="Save to Google Drive" style="display: none;">Save</button>
+        <button type="button" id="saveAsNewBtn" class="save-button drive-button-secondary" title="Save as new file" style="display: none;">Save As New</button>
+        <button type="button" id="loadFromDriveBtn" class="save-button drive-button" title="Load from Google Drive" style="display: none;">Load</button>
         <button type="button" id="undoBtn" class="save-button" title="Undo (Ctrl+Z)">Undo</button>
         <button type="button" id="redoBtn" class="save-button" title="Redo (Ctrl+Y)">Redo</button>
     </div>

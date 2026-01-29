@@ -1,205 +1,238 @@
-// Google Drive Manager - Frontend client for Google Apps Script backend
+// Google Drive Manager - Direct API Integration with OAuth
 
 export interface DriveFile {
     id: string;
     name: string;
     modifiedTime: string;
-    createdTime?: string;
-}
-
-export interface SaveFileResponse {
-    fileId: string;
-    fileName: string;
-    modifiedTime: string;
-}
-
-export interface LoadFileResponse {
-    content: string;
-    fileName: string;
-    modifiedTime: string;
-    createdTime?: string;
-}
-
-export interface ListFilesResponse {
-    files: DriveFile[];
 }
 
 export class GoogleDriveManager {
-    private webAppUrl: string;
+    private accessToken: string | null = null;
+    private readonly CLIENT_ID = '924934734078-5qpia0pclmotj2dg2k628aejvbcfdbnl.apps.googleusercontent.com';
+    private readonly SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    private tokenClient: any = null;
+    private readonly TOKEN_STORAGE_KEY = 'google_drive_access_token';
+    private readonly EXPIRY_STORAGE_KEY = 'google_drive_token_expiry';
 
-    constructor(webAppUrl: string) {
-        if (!webAppUrl) {
-            throw new Error('Apps Script Web App URL is required');
-        }
-        this.webAppUrl = webAppUrl;
+    constructor() {
+        // Try to restore token from sessionStorage
+        this.restoreToken();
+        
+        // Initialize Google Identity Services
+        this.initializeGIS();
     }
 
-    /**
-     * Save a file to Google Drive (create new or update existing)
-     */
-    async saveToGoogleDrive(
-        fileName: string,
-        data: string,
-        fileId?: string
-    ): Promise<SaveFileResponse> {
-        try {
-            // Use URL-encoded form data to avoid CORS preflight issues
-            const formData = new URLSearchParams();
-            formData.append('action', 'save');
-            formData.append('fileName', fileName);
-            formData.append('fileId', fileId || '');
-            formData.append('content', data);
+    private restoreToken(): void {
+        const storedToken = sessionStorage.getItem(this.TOKEN_STORAGE_KEY);
+        const storedExpiry = sessionStorage.getItem(this.EXPIRY_STORAGE_KEY);
+        
+        if (storedToken && storedExpiry) {
+            const expiryTime = parseInt(storedExpiry);
+            const now = Date.now();
+            
+            // Check if token is still valid (with 5 minute buffer)
+            if (expiryTime > now + (5 * 60 * 1000)) {
+                this.accessToken = storedToken;
+                console.log('Restored access token from session');
+                // Notify that we're signed in
+                setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('google-signed-in'));
+                }, 100);
+            } else {
+                // Token expired, clear it
+                sessionStorage.removeItem(this.TOKEN_STORAGE_KEY);
+                sessionStorage.removeItem(this.EXPIRY_STORAGE_KEY);
+            }
+        }
+    }
 
-            const response = await fetch(this.webAppUrl, {
-                method: 'POST',
-                redirect: 'follow', // Follow redirects (Apps Script redirects POST requests)
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: formData.toString()
+    private initializeGIS(): void {
+        // Wait for Google Identity Services library to load
+        const checkGIS = setInterval(() => {
+            if ((window as any).google?.accounts?.oauth2) {
+                clearInterval(checkGIS);
+                
+                this.tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
+                    client_id: this.CLIENT_ID,
+                    scope: this.SCOPES,
+                    callback: (response: any) => {
+                        if (response.access_token) {
+                            this.accessToken = response.access_token;
+                            
+                            // Store token and expiry in sessionStorage
+                            sessionStorage.setItem(this.TOKEN_STORAGE_KEY, response.access_token);
+                            // Token typically expires in 1 hour (3600 seconds)
+                            const expiryTime = Date.now() + (response.expires_in || 3600) * 1000;
+                            sessionStorage.setItem(this.EXPIRY_STORAGE_KEY, expiryTime.toString());
+                            
+                            console.log('OAuth access token received');
+                            // Dispatch custom event to notify app of sign-in
+                            window.dispatchEvent(new CustomEvent('google-signed-in'));
+                        } else if (response.error) {
+                            console.error('OAuth error:', response.error);
+                            // Clear stored tokens on error
+                            sessionStorage.removeItem(this.TOKEN_STORAGE_KEY);
+                            sessionStorage.removeItem(this.EXPIRY_STORAGE_KEY);
+                        }
+                    },
+                });
+            }
+        }, 100);
+    }
+
+    public requestAccessToken(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (!this.tokenClient) {
+                reject(new Error('Google Identity Services not initialized'));
+                return;
+            }
+
+            // Set up one-time listener for sign-in success
+            const handleSignIn = () => {
+                window.removeEventListener('google-signed-in', handleSignIn);
+                resolve();
+            };
+            window.addEventListener('google-signed-in', handleSignIn);
+
+            // Request access token
+            this.tokenClient.requestAccessToken();
+        });
+    }
+
+    public isSignedIn(): boolean {
+        return this.accessToken !== null;
+    }
+
+    public signOut(): void {
+        if (this.accessToken) {
+            // Revoke token
+            (window as any).google.accounts.oauth2.revoke(this.accessToken, () => {
+                console.log('Access token revoked');
+            });
+            this.accessToken = null;
+        }
+        // Clear stored tokens
+        sessionStorage.removeItem(this.TOKEN_STORAGE_KEY);
+        sessionStorage.removeItem(this.EXPIRY_STORAGE_KEY);
+        window.dispatchEvent(new CustomEvent('google-signed-out'));
+    }
+
+    private async makeApiRequest(url: string, options: RequestInit = {}): Promise<Response> {
+        if (!this.accessToken) {
+            throw new Error('Not signed in. Please sign in first.');
+        }
+
+        const headers = {
+            'Authorization': `Bearer ${this.accessToken}`,
+            ...options.headers
+        };
+
+        const response = await fetch(url, { ...options, headers });
+
+        if (response.status === 401) {
+            // Token expired, clear it
+            this.accessToken = null;
+            window.dispatchEvent(new CustomEvent('google-signed-out'));
+            throw new Error('Session expired. Please sign in again.');
+        }
+
+        return response;
+    }
+
+    public async saveToGoogleDrive(fileName: string, content: string, fileId?: string): Promise<{ fileId: string }> {
+        try {
+            const metadata = {
+                name: fileName,
+                mimeType: 'application/json'
+            };
+
+            const file = new Blob([content], { type: 'application/json' });
+            const formData = new FormData();
+            formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            formData.append('file', file);
+
+            let url: string;
+            let method: string;
+
+            if (fileId) {
+                // Update existing file
+                url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`;
+                method = 'PATCH';
+            } else {
+                // Create new file
+                url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+                method = 'POST';
+            }
+
+            const response = await this.makeApiRequest(url, {
+                method: method,
+                body: formData
             });
 
-            const responseText = await response.text();
-
-            if (!responseText || responseText.trim().length === 0) {
-                throw new Error('Apps Script returned empty response');
-            }
-
-            // Extract JSON from response
-            let jsonText = responseText;
-            const jsonStart = responseText.indexOf('{');
-            const jsonEnd = responseText.lastIndexOf('}');
-
-            if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
-                jsonText = responseText.substring(jsonStart, jsonEnd + 1);
-            }
-
-            const result = JSON.parse(jsonText);
-
-            if (!result.success) {
-                throw new Error(result.error || 'Failed to save file');
-            }
-
-            return {
-                fileId: result.fileId,
-                fileName: result.fileName,
-                modifiedTime: result.modifiedTime
-            };
-        } catch (error) {
-            if (error instanceof Error) {
-                throw new Error(`Failed to save to Google Drive: ${error.message}`);
-            }
-            throw new Error('Failed to save to Google Drive: Unknown error');
-        }
-    }
-
-    /**
-     * Load a file from Google Drive
-     */
-    async loadFromGoogleDrive(fileId: string): Promise<LoadFileResponse> {
-        try {
-            if (!fileId) {
-                throw new Error('fileId is required');
-            }
-
-            const url = `${this.webAppUrl}?action=load&fileId=${encodeURIComponent(fileId)}`;
-            const response = await fetch(url);
-
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                throw new Error(`Failed to save file: ${response.status} ${errorText}`);
             }
 
             const result = await response.json();
-
-            if (!result.success) {
-                throw new Error(result.error || 'Failed to load file');
-            }
-
-            return {
-                content: result.content,
-                fileName: result.fileName,
-                modifiedTime: result.modifiedTime,
-                createdTime: result.createdTime
-            };
+            return { fileId: result.id };
         } catch (error) {
-            if (error instanceof Error) {
-                throw new Error(`Failed to load from Google Drive: ${error.message}`);
-            }
-            throw new Error('Failed to load from Google Drive: Unknown error');
+            console.error('Error in saveToGoogleDrive:', error);
+            throw error;
         }
     }
 
-    /**
-     * List all character sheet files in Google Drive
-     */
-    async listFiles(): Promise<DriveFile[]> {
+    public async loadFromGoogleDrive(fileId: string): Promise<{ content: string }> {
         try {
-            const url = `${this.webAppUrl}?action=list`;
-            const response = await fetch(url);
+            const response = await this.makeApiRequest(
+                `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`
+            );
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`Failed to load file: ${response.status}`);
+            }
+
+            const content = await response.text();
+            return { content };
+        } catch (error) {
+            console.error('Error in loadFromGoogleDrive:', error);
+            throw error;
+        }
+    }
+
+    public async listFiles(): Promise<DriveFile[]> {
+        try {
+            // List files created by this app (drive.file scope only shows these)
+            const query = "name contains 'character-sheet' or name contains '.json'";
+            const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,modifiedTime)&orderBy=modifiedTime desc`;
+
+            const response = await this.makeApiRequest(url);
+
+            if (!response.ok) {
+                throw new Error(`Failed to list files: ${response.status}`);
             }
 
             const result = await response.json();
-
-            if (!result.success) {
-                throw new Error(result.error || 'Failed to list files');
-            }
-
             return result.files || [];
         } catch (error) {
-            if (error instanceof Error) {
-                throw new Error(`Failed to list files: ${error.message}`);
-            }
-            throw new Error('Failed to list files: Unknown error');
+            console.error('Error in listFiles:', error);
+            throw error;
         }
     }
 
-    /**
-     * Delete a file from Google Drive
-     */
-    async deleteFile(fileId: string): Promise<void> {
+    public async deleteFile(fileId: string): Promise<void> {
         try {
-            if (!fileId) {
-                throw new Error('fileId is required');
-            }
+            const response = await this.makeApiRequest(
+                `https://www.googleapis.com/drive/v3/files/${fileId}`,
+                { method: 'DELETE' }
+            );
 
-            // Use URL-encoded form data to avoid CORS preflight issues
-            const formData = new URLSearchParams();
-            formData.append('action', 'delete');
-            formData.append('fileId', fileId);
-
-            const response = await fetch(this.webAppUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: formData.toString()
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            // Get response as text first to debug
-            const responseText = await response.text();
-            let result;
-            try {
-                result = JSON.parse(responseText);
-            } catch (parseError) {
-                console.error('Failed to parse response:', responseText);
-                throw new Error(`Invalid JSON response from server: ${responseText.substring(0, 100)}`);
-            }
-
-            if (!result.success) {
-                throw new Error(result.error || 'Failed to delete file');
+            if (!response.ok && response.status !== 204) {
+                throw new Error(`Failed to delete file: ${response.status}`);
             }
         } catch (error) {
-            if (error instanceof Error) {
-                throw new Error(`Failed to delete file: ${error.message}`);
-            }
-            throw new Error('Failed to delete file: Unknown error');
+            console.error('Error in deleteFile:', error);
+            throw error;
         }
     }
 }
