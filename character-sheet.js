@@ -146,7 +146,6 @@ class CharacterSheet {
         // Google Drive integration
         this.googleDriveManager = null;
         this.currentDriveFileId = null;
-        this.APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwVqKRYFicA3JSB3RrNZWMjfupGV2q-MhS-BpZ_zdoRJC0nZGfUpDGgAUcgi3I7etKeLg/exec';
         // Initialize layout manager first (will be updated with saved layout in loadData)
         this.layoutManager = new LayoutManager();
         this.layoutManager.setSaveCallback(() => {
@@ -458,46 +457,46 @@ class CharacterSheet {
     }
     initializeEventListeners() {
         // Basic Info
-        this.addInputListener('characterName', (v) => this.data.characterName = v);
-        this.addInputListener('playerName', (v) => this.data.playerName = v);
-        this.addInputListener('race', (v) => this.data.race = v);
+        this.addInputListener('characterName', (v) => { this.data.characterName = v; });
+        this.addInputListener('playerName', (v) => { this.data.playerName = v; });
+        this.addInputListener('race', (v) => { this.data.race = v; });
         this.addInputListener('level', (v) => {
             this.data.level = this.validateLevel(parseInt(v) || 1);
         });
-        this.addInputListener('background', (v) => this.data.background = v);
-        this.addInputListener('subclass', (v) => this.data.subclass = v);
-        this.addInputListener('alignment', (v) => this.data.alignment = v);
-        this.addInputListener('experience', (v) => this.data.experience = parseInt(v) || 0);
+        this.addInputListener('background', (v) => { this.data.background = v; });
+        this.addInputListener('subclass', (v) => { this.data.subclass = v; });
+        this.addInputListener('alignment', (v) => { this.data.alignment = v; });
+        this.addInputListener('experience', (v) => { this.data.experience = parseInt(v) || 0; });
         // Ability Scores - setup using helper function (reduces duplication)
         this.setupAbilityScoreListeners();
         // Saving Throws
-        this.addCheckboxListener('strSaveProf', (v) => this.data.savingThrows.str = v);
-        this.addCheckboxListener('dexSaveProf', (v) => this.data.savingThrows.dex = v);
-        this.addCheckboxListener('conSaveProf', (v) => this.data.savingThrows.con = v);
-        this.addCheckboxListener('intSaveProf', (v) => this.data.savingThrows.int = v);
-        this.addCheckboxListener('wisSaveProf', (v) => this.data.savingThrows.wis = v);
-        this.addCheckboxListener('chaSaveProf', (v) => this.data.savingThrows.cha = v);
+        this.addCheckboxListener('strSaveProf', (v) => { this.data.savingThrows.str = v; });
+        this.addCheckboxListener('dexSaveProf', (v) => { this.data.savingThrows.dex = v; });
+        this.addCheckboxListener('conSaveProf', (v) => { this.data.savingThrows.con = v; });
+        this.addCheckboxListener('intSaveProf', (v) => { this.data.savingThrows.int = v; });
+        this.addCheckboxListener('wisSaveProf', (v) => { this.data.savingThrows.wis = v; });
+        this.addCheckboxListener('chaSaveProf', (v) => { this.data.savingThrows.cha = v; });
         // Combat Stats
-        this.addInputListener('armorClass', (v) => this.data.armorClass = parseInt(v) || 10);
-        this.addCheckboxListener('shield', (v) => this.data.shield = v);
-        this.addInputListener('initiative', (v) => this.data.initiative = parseInt(v) || 0);
-        this.addInputListener('speed', (v) => this.data.speed = parseInt(v) || 30);
-        this.addInputListener('size', (v) => this.data.size = v);
-        this.addInputListener('proficiencyBonus', (v) => this.data.proficiencyBonus = v);
-        this.addInputListener('passivePerception', (v) => this.data.passivePerception = parseInt(v) || 10);
-        this.addCheckboxListener('heroicInspiration', (v) => this.data.heroicInspiration = v);
-        this.addInputListener('hitPointsMax', (v) => this.data.hitPointsMax = parseInt(v) || 1);
-        this.addInputListener('hitPointsCurrent', (v) => this.data.hitPointsCurrent = parseInt(v) || 0);
-        this.addInputListener('hitPointsTemp', (v) => this.data.hitPointsTemp = parseInt(v) || 0);
-        this.addInputListener('hitDiceSpent', (v) => this.data.hitDiceSpent = parseInt(v) || 0);
-        this.addInputListener('hitDice', (v) => this.data.hitDice = v);
+        this.addInputListener('armorClass', (v) => { this.data.armorClass = parseInt(v) || 10; });
+        this.addCheckboxListener('shield', (v) => { this.data.shield = v; });
+        this.addInputListener('initiative', (v) => { this.data.initiative = parseInt(v) || 0; });
+        this.addInputListener('speed', (v) => { this.data.speed = parseInt(v) || 30; });
+        this.addInputListener('size', (v) => { this.data.size = v; });
+        this.addInputListener('proficiencyBonus', (v) => { this.data.proficiencyBonus = v; });
+        this.addInputListener('passivePerception', (v) => { this.data.passivePerception = parseInt(v) || 10; });
+        this.addCheckboxListener('heroicInspiration', (v) => { this.data.heroicInspiration = v; });
+        this.addInputListener('hitPointsMax', (v) => { this.data.hitPointsMax = parseInt(v) || 1; });
+        this.addInputListener('hitPointsCurrent', (v) => { this.data.hitPointsCurrent = parseInt(v) || 0; });
+        this.addInputListener('hitPointsTemp', (v) => { this.data.hitPointsTemp = parseInt(v) || 0; });
+        this.addInputListener('hitDiceSpent', (v) => { this.data.hitDiceSpent = parseInt(v) || 0; });
+        this.addInputListener('hitDice', (v) => { this.data.hitDice = v; });
         // Death Saves
-        this.addCheckboxListener('deathSave1', (v) => this.data.deathSaves.success[0] = v);
-        this.addCheckboxListener('deathSave2', (v) => this.data.deathSaves.success[1] = v);
-        this.addCheckboxListener('deathSave3', (v) => this.data.deathSaves.success[2] = v);
-        this.addCheckboxListener('deathFail1', (v) => this.data.deathSaves.failure[0] = v);
-        this.addCheckboxListener('deathFail2', (v) => this.data.deathSaves.failure[1] = v);
-        this.addCheckboxListener('deathFail3', (v) => this.data.deathSaves.failure[2] = v);
+        this.addCheckboxListener('deathSave1', (v) => { this.data.deathSaves.success[0] = v; });
+        this.addCheckboxListener('deathSave2', (v) => { this.data.deathSaves.success[1] = v; });
+        this.addCheckboxListener('deathSave3', (v) => { this.data.deathSaves.success[2] = v; });
+        this.addCheckboxListener('deathFail1', (v) => { this.data.deathSaves.failure[0] = v; });
+        this.addCheckboxListener('deathFail2', (v) => { this.data.deathSaves.failure[1] = v; });
+        this.addCheckboxListener('deathFail3', (v) => { this.data.deathSaves.failure[2] = v; });
         // Skills - handled dynamically
         const addSkillBtn = document.getElementById('addSkillBtn');
         if (addSkillBtn) {
@@ -514,6 +513,44 @@ class CharacterSheet {
             addSpellBtn.addEventListener('click', () => this.addSpell());
         }
         // Google Drive buttons
+        const signInBtn = document.getElementById('signInBtn');
+        if (signInBtn) {
+            signInBtn.addEventListener('click', async () => {
+                if (this.googleDriveManager) {
+                    try {
+                        await this.googleDriveManager.requestAccessToken();
+                        this.showSaveStatus('saved', 'Signed in successfully');
+                        setTimeout(() => {
+                            const statusEl = document.getElementById('saveStatus');
+                            if (statusEl) {
+                                statusEl.textContent = '';
+                                statusEl.className = 'save-status';
+                            }
+                        }, 2000);
+                    }
+                    catch (error) {
+                        console.error('Sign-in error:', error);
+                        this.showSaveStatus('error', 'Failed to sign in');
+                    }
+                }
+            });
+        }
+        const signOutBtn = document.getElementById('signOutBtn');
+        if (signOutBtn) {
+            signOutBtn.addEventListener('click', () => {
+                if (this.googleDriveManager) {
+                    this.googleDriveManager.signOut();
+                    this.showSaveStatus('saved', 'Signed out');
+                    setTimeout(() => {
+                        const statusEl = document.getElementById('saveStatus');
+                        if (statusEl) {
+                            statusEl.textContent = '';
+                            statusEl.className = 'save-status';
+                        }
+                    }, 2000);
+                }
+            });
+        }
         const saveToDriveBtn = document.getElementById('saveToDriveBtn');
         if (saveToDriveBtn) {
             saveToDriveBtn.addEventListener('click', () => this.saveToGoogleDrive());
@@ -571,37 +608,37 @@ class CharacterSheet {
             }
         });
         // Features & Spells
-        this.addTextareaListener('features', (v) => this.data.features = v);
-        this.addTextareaListener('feats', (v) => this.data.feats = v);
-        this.addTextareaListener('speciesTraits', (v) => this.data.speciesTraits = v);
-        this.addInputListener('spellSlots1', (v) => this.data.spellSlots.level1.current = parseInt(v) || 0);
-        this.addInputListener('spellSlots2', (v) => this.data.spellSlots.level2.current = parseInt(v) || 0);
-        this.addInputListener('spellSlots3', (v) => this.data.spellSlots.level3.current = parseInt(v) || 0);
-        this.addInputListener('spellSlots4', (v) => this.data.spellSlots.level4.current = parseInt(v) || 0);
-        this.addInputListener('spellSlots5', (v) => this.data.spellSlots.level5.current = parseInt(v) || 0);
-        this.addInputListener('spellSlots6', (v) => this.data.spellSlots.level6.current = parseInt(v) || 0);
-        this.addInputListener('spellSlots7', (v) => this.data.spellSlots.level7.current = parseInt(v) || 0);
-        this.addInputListener('spellSlots8', (v) => this.data.spellSlots.level8.current = parseInt(v) || 0);
-        this.addInputListener('spellSlots9', (v) => this.data.spellSlots.level9.current = parseInt(v) || 0);
-        this.addInputListener('spellSlots1Max', (v) => this.data.spellSlots.level1.max = parseInt(v) || 0);
-        this.addInputListener('spellSlots2Max', (v) => this.data.spellSlots.level2.max = parseInt(v) || 0);
-        this.addInputListener('spellSlots3Max', (v) => this.data.spellSlots.level3.max = parseInt(v) || 0);
-        this.addInputListener('spellSlots4Max', (v) => this.data.spellSlots.level4.max = parseInt(v) || 0);
-        this.addInputListener('spellSlots5Max', (v) => this.data.spellSlots.level5.max = parseInt(v) || 0);
-        this.addInputListener('spellSlots6Max', (v) => this.data.spellSlots.level6.max = parseInt(v) || 0);
-        this.addInputListener('spellSlots7Max', (v) => this.data.spellSlots.level7.max = parseInt(v) || 0);
-        this.addInputListener('spellSlots8Max', (v) => this.data.spellSlots.level8.max = parseInt(v) || 0);
-        this.addInputListener('spellSlots9Max', (v) => this.data.spellSlots.level9.max = parseInt(v) || 0);
-        this.addInputListener('spellcastingAbility', (v) => this.data.spellcastingAbility = v);
-        this.addInputListener('spellSaveDC', (v) => this.data.spellSaveDC = parseInt(v) || 0);
-        this.addInputListener('spellAttackBonus', (v) => this.data.spellAttackBonus = v);
-        this.addTextareaListener('knownSpells', (v) => this.data.knownSpells = v);
+        this.addTextareaListener('features', (v) => { this.data.features = v; });
+        this.addTextareaListener('feats', (v) => { this.data.feats = v; });
+        this.addTextareaListener('speciesTraits', (v) => { this.data.speciesTraits = v; });
+        this.addInputListener('spellSlots1', (v) => { this.data.spellSlots.level1.current = parseInt(v) || 0; });
+        this.addInputListener('spellSlots2', (v) => { this.data.spellSlots.level2.current = parseInt(v) || 0; });
+        this.addInputListener('spellSlots3', (v) => { this.data.spellSlots.level3.current = parseInt(v) || 0; });
+        this.addInputListener('spellSlots4', (v) => { this.data.spellSlots.level4.current = parseInt(v) || 0; });
+        this.addInputListener('spellSlots5', (v) => { this.data.spellSlots.level5.current = parseInt(v) || 0; });
+        this.addInputListener('spellSlots6', (v) => { this.data.spellSlots.level6.current = parseInt(v) || 0; });
+        this.addInputListener('spellSlots7', (v) => { this.data.spellSlots.level7.current = parseInt(v) || 0; });
+        this.addInputListener('spellSlots8', (v) => { this.data.spellSlots.level8.current = parseInt(v) || 0; });
+        this.addInputListener('spellSlots9', (v) => { this.data.spellSlots.level9.current = parseInt(v) || 0; });
+        this.addInputListener('spellSlots1Max', (v) => { this.data.spellSlots.level1.max = parseInt(v) || 0; });
+        this.addInputListener('spellSlots2Max', (v) => { this.data.spellSlots.level2.max = parseInt(v) || 0; });
+        this.addInputListener('spellSlots3Max', (v) => { this.data.spellSlots.level3.max = parseInt(v) || 0; });
+        this.addInputListener('spellSlots4Max', (v) => { this.data.spellSlots.level4.max = parseInt(v) || 0; });
+        this.addInputListener('spellSlots5Max', (v) => { this.data.spellSlots.level5.max = parseInt(v) || 0; });
+        this.addInputListener('spellSlots6Max', (v) => { this.data.spellSlots.level6.max = parseInt(v) || 0; });
+        this.addInputListener('spellSlots7Max', (v) => { this.data.spellSlots.level7.max = parseInt(v) || 0; });
+        this.addInputListener('spellSlots8Max', (v) => { this.data.spellSlots.level8.max = parseInt(v) || 0; });
+        this.addInputListener('spellSlots9Max', (v) => { this.data.spellSlots.level9.max = parseInt(v) || 0; });
+        this.addInputListener('spellcastingAbility', (v) => { this.data.spellcastingAbility = v; });
+        this.addInputListener('spellSaveDC', (v) => { this.data.spellSaveDC = parseInt(v) || 0; });
+        this.addInputListener('spellAttackBonus', (v) => { this.data.spellAttackBonus = v; });
+        this.addTextareaListener('knownSpells', (v) => { this.data.knownSpells = v; });
         // Equipment & Proficiencies
-        this.addTextareaListener('equipment', (v) => this.data.equipment = v);
-        this.addTextareaListener('equipmentDetail', (v) => this.data.equipmentDetail = v);
-        this.addTextareaListener('armorProficiencies', (v) => this.data.armorProficiencies = v);
-        this.addTextareaListener('weaponProficiencies', (v) => this.data.weaponProficiencies = v);
-        this.addTextareaListener('toolProficiencies', (v) => this.data.toolProficiencies = v);
+        this.addTextareaListener('equipment', (v) => { this.data.equipment = v; });
+        this.addTextareaListener('equipmentDetail', (v) => { this.data.equipmentDetail = v; });
+        this.addTextareaListener('armorProficiencies', (v) => { this.data.armorProficiencies = v; });
+        this.addTextareaListener('weaponProficiencies', (v) => { this.data.weaponProficiencies = v; });
+        this.addTextareaListener('toolProficiencies', (v) => { this.data.toolProficiencies = v; });
         this.addTextareaListener('languages', (v) => {
             this.data.languages = v;
             // Sync with page 2 languages field
@@ -617,15 +654,15 @@ class CharacterSheet {
                 languages.value = v;
         });
         // Coins
-        this.addInputListener('coinCP', (v) => this.data.coins.cp = parseInt(v) || 0);
-        this.addInputListener('coinSP', (v) => this.data.coins.sp = parseInt(v) || 0);
-        this.addInputListener('coinEP', (v) => this.data.coins.ep = parseInt(v) || 0);
-        this.addInputListener('coinGP', (v) => this.data.coins.gp = parseInt(v) || 0);
-        this.addInputListener('coinPP', (v) => this.data.coins.pp = parseInt(v) || 0);
+        this.addInputListener('coinCP', (v) => { this.data.coins.cp = parseInt(v) || 0; });
+        this.addInputListener('coinSP', (v) => { this.data.coins.sp = parseInt(v) || 0; });
+        this.addInputListener('coinEP', (v) => { this.data.coins.ep = parseInt(v) || 0; });
+        this.addInputListener('coinGP', (v) => { this.data.coins.gp = parseInt(v) || 0; });
+        this.addInputListener('coinPP', (v) => { this.data.coins.pp = parseInt(v) || 0; });
         // Backstory & Appearance
-        this.addTextareaListener('backstory', (v) => this.data.backstory = v);
-        this.addTextareaListener('appearance', (v) => this.data.appearance = v);
-        this.addTextareaListener('notes', (v) => this.data.notes = v);
+        this.addTextareaListener('backstory', (v) => { this.data.backstory = v; });
+        this.addTextareaListener('appearance', (v) => { this.data.appearance = v; });
+        this.addTextareaListener('notes', (v) => { this.data.notes = v; });
     }
     addInputListener(id, callback) {
         const element = document.getElementById(id);
@@ -1306,19 +1343,49 @@ class CharacterSheet {
     }
     // Google Drive Integration Methods
     initializeGoogleDrive() {
-        // Only initialize if Apps Script URL is configured
-        if (this.APPS_SCRIPT_URL) {
-            try {
-                this.googleDriveManager = new GoogleDriveManager(this.APPS_SCRIPT_URL);
-            }
-            catch (error) {
-                console.error('Failed to initialize Google Drive manager:', error);
-            }
+        try {
+            this.googleDriveManager = new GoogleDriveManager();
+            // Listen for sign-in/sign-out events
+            window.addEventListener('google-signed-in', () => {
+                this.updateDriveButtonVisibility();
+                this.showSaveStatus('saved', 'Signed in to Google Drive');
+                setTimeout(() => {
+                    const statusEl = document.getElementById('saveStatus');
+                    if (statusEl) {
+                        statusEl.textContent = '';
+                        statusEl.className = 'save-status';
+                    }
+                }, 2000);
+            });
+            window.addEventListener('google-signed-out', () => this.updateDriveButtonVisibility());
+            // Initial button visibility
+            this.updateDriveButtonVisibility();
+        }
+        catch (error) {
+            console.error('Failed to initialize Google Drive manager:', error);
         }
     }
+    updateDriveButtonVisibility() {
+        const signInBtn = document.getElementById('signInBtn');
+        const signOutBtn = document.getElementById('signOutBtn');
+        const saveToDriveBtn = document.getElementById('saveToDriveBtn');
+        const saveAsNewBtn = document.getElementById('saveAsNewBtn');
+        const loadFromDriveBtn = document.getElementById('loadFromDriveBtn');
+        const isSignedIn = this.googleDriveManager?.isSignedIn() || false;
+        if (signInBtn)
+            signInBtn.style.display = isSignedIn ? 'none' : 'inline-block';
+        if (signOutBtn)
+            signOutBtn.style.display = isSignedIn ? 'inline-block' : 'none';
+        if (saveToDriveBtn)
+            saveToDriveBtn.style.display = isSignedIn ? 'inline-block' : 'none';
+        if (saveAsNewBtn)
+            saveAsNewBtn.style.display = isSignedIn ? 'inline-block' : 'none';
+        if (loadFromDriveBtn)
+            loadFromDriveBtn.style.display = isSignedIn ? 'inline-block' : 'none';
+    }
     async saveToGoogleDrive() {
-        if (!this.googleDriveManager) {
-            this.showSaveStatus('error', 'Google Drive not configured. Please set APPS_SCRIPT_URL.');
+        if (!this.googleDriveManager || !this.googleDriveManager.isSignedIn()) {
+            this.showSaveStatus('error', 'Please sign in to Google Drive first');
             return;
         }
         this.setDriveButtonsEnabled(false);
@@ -1354,8 +1421,8 @@ class CharacterSheet {
         }
     }
     async saveAsNewToGoogleDrive() {
-        if (!this.googleDriveManager) {
-            this.showSaveStatus('error', 'Google Drive not configured. Please set APPS_SCRIPT_URL.');
+        if (!this.googleDriveManager || !this.googleDriveManager.isSignedIn()) {
+            this.showSaveStatus('error', 'Please sign in to Google Drive first');
             return;
         }
         // Prompt for filename
@@ -1407,8 +1474,8 @@ class CharacterSheet {
         }
     }
     async showGoogleDriveFilePicker() {
-        if (!this.googleDriveManager) {
-            this.showSaveStatus('error', 'Google Drive not configured. Please set APPS_SCRIPT_URL.');
+        if (!this.googleDriveManager || !this.googleDriveManager.isSignedIn()) {
+            this.showSaveStatus('error', 'Please sign in to Google Drive first');
             return;
         }
         this.setDriveButtonsEnabled(false);
@@ -1580,8 +1647,8 @@ class CharacterSheet {
         if (modal) {
             const loadButtons = modal.querySelectorAll('.load-file-btn');
             const deleteButtons = modal.querySelectorAll('.delete-file-btn');
-            loadButtons.forEach(btn => btn.disabled = !enabled);
-            deleteButtons.forEach(btn => btn.disabled = !enabled);
+            loadButtons.forEach(btn => { btn.disabled = !enabled; });
+            deleteButtons.forEach(btn => { btn.disabled = !enabled; });
         }
     }
     escapeHtml(text) {
