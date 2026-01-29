@@ -476,7 +476,8 @@ button:focus-visible {
     gap: 2px;
 }
 
-.death-saves-field label {
+.death-saves-field label,
+.death-saves-label {
     font-size: 7pt;
     text-transform: uppercase;
 }
@@ -960,7 +961,8 @@ button:focus-visible {
     gap: 8px;
 }
 
-.proficiency-category label {
+.proficiency-category label,
+.proficiency-header {
     font-size: 8pt;
     font-weight: bold;
     text-transform: uppercase;
@@ -1199,7 +1201,8 @@ button:focus-visible {
     margin-top: 8px;
 }
 
-.known-spells-section label {
+.known-spells-section label,
+.section-header {
     font-size: 8pt;
     font-weight: bold;
     text-transform: uppercase;
