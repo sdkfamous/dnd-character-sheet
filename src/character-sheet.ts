@@ -28,6 +28,14 @@ interface LayoutData {
     weaponsWidth: number;
     proficienciesWidth: number;
     equipmentWidth: number;
+    spellColumnWidths?: {
+        name?: number;
+        level?: number;
+        castingTime?: number;
+        range?: number;
+        duration?: number;
+        notes?: number;
+    };
 }
 
 // Layout Manager Class
@@ -59,7 +67,8 @@ class LayoutManager {
             skillsWidth: 250,
             weaponsWidth: 0, // 0 means use default/auto
             proficienciesWidth: 0,
-            equipmentWidth: 0
+            equipmentWidth: 0,
+            spellColumnWidths: {}
         };
     }
 
@@ -83,6 +92,25 @@ class LayoutManager {
         if (equipmentSection && this.layout.equipmentWidth) {
             equipmentSection.style.width = `${this.layout.equipmentWidth}px`;
         }
+
+        // Apply spell column widths
+        this.applySpellColumnWidths();
+    }
+
+    private applySpellColumnWidths(): void {
+        if (!this.layout.spellColumnWidths) return;
+
+        const headerRow = document.getElementById('spellsHeaderRow');
+        if (!headerRow) return;
+
+        const headers = headerRow.querySelectorAll('th[data-column]');
+        headers.forEach(th => {
+            const column = (th as HTMLElement).dataset.column;
+            if (column && this.layout.spellColumnWidths && this.layout.spellColumnWidths[column as keyof typeof this.layout.spellColumnWidths]) {
+                const width = this.layout.spellColumnWidths[column as keyof typeof this.layout.spellColumnWidths];
+                (th as HTMLElement).style.width = `${width}px`;
+            }
+        });
     }
 
     private initializeResizeListeners(): void {
@@ -121,6 +149,73 @@ class LayoutManager {
                 this.saveLayout();
             });
         }
+
+        // Spell column resizing
+        this.initializeSpellColumnResize();
+    }
+
+    private initializeSpellColumnResize(): void {
+        const headerRow = document.getElementById('spellsHeaderRow');
+        if (!headerRow) return;
+
+        const headers = headerRow.querySelectorAll('th[data-column]');
+        headers.forEach(th => {
+            const column = (th as HTMLElement).dataset.column;
+            if (!column) return;
+
+            let isResizing = false;
+            let startX = 0;
+            let startWidth = 0;
+
+            const onMouseMove = (e: MouseEvent) => {
+                if (!isResizing) return;
+                const diff = e.clientX - startX;
+                const newWidth = Math.max(50, startWidth + diff);
+                (th as HTMLElement).style.width = `${newWidth}px`;
+            };
+
+            const onMouseUp = () => {
+                if (!isResizing) return;
+                isResizing = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                (th as HTMLElement).style.cursor = '';
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+
+                // Save the new width
+                if (!this.layout.spellColumnWidths) {
+                    this.layout.spellColumnWidths = {};
+                }
+                this.layout.spellColumnWidths[column as keyof typeof this.layout.spellColumnWidths] = (th as HTMLElement).offsetWidth;
+                this.saveLayout();
+            };
+
+            (th as HTMLElement).addEventListener('mousedown', (e: MouseEvent) => {
+                const rect = (th as HTMLElement).getBoundingClientRect();
+                const isNearRightEdge = e.clientX > rect.right - 10;
+
+                if (isNearRightEdge) {
+                    isResizing = true;
+                    startX = e.clientX;
+                    startWidth = (th as HTMLElement).offsetWidth;
+                    (th as HTMLElement).style.cursor = 'col-resize';
+                    document.body.style.cursor = 'col-resize';
+                    document.body.style.userSelect = 'none';
+                    
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                    e.preventDefault();
+                }
+            });
+
+            (th as HTMLElement).addEventListener('mousemove', (e: MouseEvent) => {
+                if (isResizing) return;
+                const rect = (th as HTMLElement).getBoundingClientRect();
+                const isNearRightEdge = e.clientX > rect.right - 10;
+                (th as HTMLElement).style.cursor = isNearRightEdge ? 'col-resize' : '';
+            });
+        });
     }
 
     private addResizeListener(element: HTMLElement, callback: () => void): void {
@@ -262,9 +357,8 @@ interface DnDCharacterData {
         name: string;
         level: string;
         castingTime: string;
-        concentration: string;
         range: string;
-        material: string;
+        duration: string;
         notes: string;
     }>;
 
@@ -328,10 +422,12 @@ class CharacterSheet {
     // Google Drive integration
     private googleDriveManager: GoogleDriveManager | null = null;
     private currentDriveFileId: string | null = null;
+    private currentDriveFileName: string | null = null;
 
     // Local storage
     private readonly LOCAL_STORAGE_KEY = 'dnd_character_data';
     private readonly LOCAL_LAYOUT_KEY = 'dnd_character_layout';
+    private readonly LOCAL_DRIVE_FILE_KEY = 'dnd_drive_file_info';
 
     constructor() {
         // Initialize layout manager first (will be updated with saved layout in loadData)
@@ -457,6 +553,27 @@ class CharacterSheet {
                     // Ensure spells array exists
                     if (!characterData.spells || !Array.isArray(characterData.spells)) {
                         characterData.spells = [];
+                    }
+                    // Migrate old spell format (concentration, material) to new format (duration)
+                    if (characterData.spells && Array.isArray(characterData.spells)) {
+                        characterData.spells = characterData.spells.map((spell: any) => {
+                            // If spell has old format fields, migrate to new format
+                            if (spell.concentration !== undefined || spell.material !== undefined) {
+                                const { concentration, material, ...rest } = spell;
+                                return {
+                                    ...rest,
+                                    duration: spell.duration || '' // Add duration field if missing
+                                };
+                            }
+                            // If spell doesn't have duration field, add it
+                            if (spell.duration === undefined) {
+                                return {
+                                    ...spell,
+                                    duration: ''
+                                };
+                            }
+                            return spell;
+                        });
                     }
                     // Validate and migrate data
                     return this.validateAndMigrateData(characterData);
@@ -1503,7 +1620,7 @@ class CharacterSheet {
         }
     }
 
-    private createSpellRow(spell: { id: string; name: string; level: string; castingTime: string; concentration: string; range: string; material: string; notes: string }): HTMLElement {
+    private createSpellRow(spell: { id: string; name: string; level: string; castingTime: string; range: string; duration: string; notes: string }): HTMLElement {
         const row = document.createElement('tr');
         row.dataset.spellId = spell.id;
 
@@ -1512,9 +1629,8 @@ class CharacterSheet {
             { key: 'name' as const, placeholder: 'Fire Bolt', className: 'spell-name' },
             { key: 'level' as const, placeholder: 'Cantrip', className: 'spell-level' },
             { key: 'castingTime' as const, placeholder: '1 action', className: 'spell-casting-time' },
-            { key: 'concentration' as const, placeholder: 'Concentration, Ritual', className: 'spell-concentration' },
             { key: 'range' as const, placeholder: '120 ft', className: 'spell-range' },
-            { key: 'material' as const, placeholder: 'Required Material', className: 'spell-material' },
+            { key: 'duration' as const, placeholder: 'Instantaneous', className: 'spell-duration' },
             { key: 'notes' as const, placeholder: 'Notes', className: 'spell-notes' }
         ];
 
@@ -1552,9 +1668,8 @@ class CharacterSheet {
             name: '',
             level: '',
             castingTime: '',
-            concentration: '',
             range: '',
-            material: '',
+            duration: '',
             notes: ''
         };
         this.data.spells.push(newSpell);
@@ -1587,6 +1702,13 @@ class CharacterSheet {
             // Save layout data
             const layoutData = this.layoutManager.getLayout();
             localStorage.setItem(this.LOCAL_LAYOUT_KEY, JSON.stringify(layoutData));
+            
+            // Save Google Drive file info
+            const driveFileInfo = {
+                fileId: this.currentDriveFileId,
+                fileName: this.currentDriveFileName
+            };
+            localStorage.setItem(this.LOCAL_DRIVE_FILE_KEY, JSON.stringify(driveFileInfo));
         } catch (error) {
             console.error('Error saving to localStorage:', error);
         }
@@ -1608,6 +1730,15 @@ class CharacterSheet {
                 const layoutData = JSON.parse(savedLayout);
                 this.layoutManager.setLayout(layoutData);
                 console.log('Loaded layout from localStorage');
+            }
+
+            // Load Google Drive file info
+            const savedDriveInfo = localStorage.getItem(this.LOCAL_DRIVE_FILE_KEY);
+            if (savedDriveInfo) {
+                const driveInfo = JSON.parse(savedDriveInfo);
+                this.currentDriveFileId = driveInfo.fileId || null;
+                this.currentDriveFileName = driveInfo.fileName || null;
+                console.log('Loaded Drive file info from localStorage:', driveInfo);
             }
         } catch (error) {
             console.error('Error loading from localStorage:', error);
@@ -1675,9 +1806,11 @@ class CharacterSheet {
             };
 
             const dataToSave = JSON.stringify(fileData, null, 2);
-            const fileName = this.data.characterName
+            
+            // Use stored filename if available, otherwise generate from character name
+            const fileName = this.currentDriveFileName || (this.data.characterName
                 ? `${this.data.characterName}-character-sheet.json`
-                : 'character-sheet.json';
+                : 'character-sheet.json');
 
             const result = await this.googleDriveManager.saveToGoogleDrive(
                 fileName,
@@ -1686,6 +1819,7 @@ class CharacterSheet {
             );
 
             this.currentDriveFileId = result.fileId;
+            this.currentDriveFileName = fileName;
             this.showSaveStatus('saved', 'Saved to Google Drive');
             setTimeout(() => {
                 const statusEl = document.getElementById('saveStatus');
@@ -1748,8 +1882,9 @@ class CharacterSheet {
                 undefined // No fileId = create new file
             );
 
-            // Update current file ID to the new file
+            // Update current file ID and filename to the new file
             this.currentDriveFileId = result.fileId;
+            this.currentDriveFileName = finalFileName;
             this.showSaveStatus('saved', 'Saved as new file');
             setTimeout(() => {
                 const statusEl = document.getElementById('saveStatus');
@@ -1824,7 +1959,7 @@ class CharacterSheet {
                 // Load button
                 const loadBtn = fileItem.querySelector('.load-file-btn');
                 if (loadBtn) {
-                    loadBtn.addEventListener('click', () => this.loadFromGoogleDrive(file.id));
+                    loadBtn.addEventListener('click', () => this.loadFromGoogleDrive(file.id, file.name));
                 }
 
                 // Delete button
@@ -1848,7 +1983,7 @@ class CharacterSheet {
         }
     }
 
-    private async loadFromGoogleDrive(fileId: string): Promise<void> {
+    private async loadFromGoogleDrive(fileId: string, fileName?: string): Promise<void> {
         if (!this.googleDriveManager) {
             this.showSaveStatus('error', 'Google Drive not configured');
             return;
@@ -1880,6 +2015,7 @@ class CharacterSheet {
             // Validate and merge with defaults
             this.data = this.validateAndMigrateData(characterData);
             this.currentDriveFileId = fileId;
+            this.currentDriveFileName = fileName || null;
 
             // Reset history after loading
             this.history = [];
@@ -1931,9 +2067,10 @@ class CharacterSheet {
         try {
             await this.googleDriveManager.deleteFile(fileId);
 
-            // If this was the current file, clear the file ID
+            // If this was the current file, clear the file ID and filename
             if (this.currentDriveFileId === fileId) {
                 this.currentDriveFileId = null;
+                this.currentDriveFileName = null;
             }
 
             // Refresh file list

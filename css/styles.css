@@ -1172,10 +1172,18 @@ button:focus-visible {
     text-transform: uppercase;
     font-size: 7pt;
     background: #f0f0f0;
+    position: relative;
+    user-select: none;
 }
 
-.spells-table th:last-child {
+.spells-table th[data-column] {
+    min-width: 50px;
+}
+
+.spells-table th.remove-col {
     width: 30px;
+    min-width: 30px;
+    cursor: default;
 }
 
 .spells-table td {
