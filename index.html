@@ -585,17 +585,16 @@
                         <button type="button" class="add-btn" id="addSpellBtn" title="Add Spell"
                             aria-label="Add new spell">+</button>
                     </div>
-                    <table class="spells-table">
+                    <table class="spells-table" id="spellsTable">
                         <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Level</th>
-                                <th>Casting Time</th>
-                                <th>Concentration, Ritual</th>
-                                <th>Range</th>
-                                <th>Required Material</th>
-                                <th>Notes</th>
-                                <th></th>
+                            <tr id="spellsHeaderRow">
+                                <th data-column="name">Name</th>
+                                <th data-column="level">Level</th>
+                                <th data-column="castingTime">Casting Time</th>
+                                <th data-column="range">Range</th>
+                                <th data-column="duration">Duration</th>
+                                <th data-column="notes">Notes</th>
+                                <th class="remove-col"></th>
                             </tr>
                         </thead>
                         <tbody id="spellsTableBody">

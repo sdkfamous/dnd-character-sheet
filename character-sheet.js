@@ -23,7 +23,8 @@ class LayoutManager {
             skillsWidth: 250,
             weaponsWidth: 0, // 0 means use default/auto
             proficienciesWidth: 0,
-            equipmentWidth: 0
+            equipmentWidth: 0,
+            spellColumnWidths: {}
         };
     }
     applyLayout() {
@@ -43,6 +44,23 @@ class LayoutManager {
         if (equipmentSection && this.layout.equipmentWidth) {
             equipmentSection.style.width = `${this.layout.equipmentWidth}px`;
         }
+        // Apply spell column widths
+        this.applySpellColumnWidths();
+    }
+    applySpellColumnWidths() {
+        if (!this.layout.spellColumnWidths)
+            return;
+        const headerRow = document.getElementById('spellsHeaderRow');
+        if (!headerRow)
+            return;
+        const headers = headerRow.querySelectorAll('th[data-column]');
+        headers.forEach(th => {
+            const column = th.dataset.column;
+            if (column && this.layout.spellColumnWidths && this.layout.spellColumnWidths[column]) {
+                const width = this.layout.spellColumnWidths[column];
+                th.style.width = `${width}px`;
+            }
+        });
     }
     initializeResizeListeners() {
         // Skills section
@@ -77,6 +95,67 @@ class LayoutManager {
                 this.saveLayout();
             });
         }
+        // Spell column resizing
+        this.initializeSpellColumnResize();
+    }
+    initializeSpellColumnResize() {
+        const headerRow = document.getElementById('spellsHeaderRow');
+        if (!headerRow)
+            return;
+        const headers = headerRow.querySelectorAll('th[data-column]');
+        headers.forEach(th => {
+            const column = th.dataset.column;
+            if (!column)
+                return;
+            let isResizing = false;
+            let startX = 0;
+            let startWidth = 0;
+            const onMouseMove = (e) => {
+                if (!isResizing)
+                    return;
+                const diff = e.clientX - startX;
+                const newWidth = Math.max(50, startWidth + diff);
+                th.style.width = `${newWidth}px`;
+            };
+            const onMouseUp = () => {
+                if (!isResizing)
+                    return;
+                isResizing = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                th.style.cursor = '';
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                // Save the new width
+                if (!this.layout.spellColumnWidths) {
+                    this.layout.spellColumnWidths = {};
+                }
+                this.layout.spellColumnWidths[column] = th.offsetWidth;
+                this.saveLayout();
+            };
+            th.addEventListener('mousedown', (e) => {
+                const rect = th.getBoundingClientRect();
+                const isNearRightEdge = e.clientX > rect.right - 10;
+                if (isNearRightEdge) {
+                    isResizing = true;
+                    startX = e.clientX;
+                    startWidth = th.offsetWidth;
+                    th.style.cursor = 'col-resize';
+                    document.body.style.cursor = 'col-resize';
+                    document.body.style.userSelect = 'none';
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                    e.preventDefault();
+                }
+            });
+            th.addEventListener('mousemove', (e) => {
+                if (isResizing)
+                    return;
+                const rect = th.getBoundingClientRect();
+                const isNearRightEdge = e.clientX > rect.right - 10;
+                th.style.cursor = isNearRightEdge ? 'col-resize' : '';
+            });
+        });
     }
     addResizeListener(element, callback) {
         let lastWidth = element.offsetWidth;
@@ -146,9 +225,11 @@ class CharacterSheet {
         // Google Drive integration
         this.googleDriveManager = null;
         this.currentDriveFileId = null;
+        this.currentDriveFileName = null;
         // Local storage
         this.LOCAL_STORAGE_KEY = 'dnd_character_data';
         this.LOCAL_LAYOUT_KEY = 'dnd_character_layout';
+        this.LOCAL_DRIVE_FILE_KEY = 'dnd_drive_file_info';
         // Initialize layout manager first (will be updated with saved layout in loadData)
         this.layoutManager = new LayoutManager();
         this.layoutManager.setSaveCallback(() => {
@@ -264,6 +345,27 @@ class CharacterSheet {
                     // Ensure spells array exists
                     if (!characterData.spells || !Array.isArray(characterData.spells)) {
                         characterData.spells = [];
+                    }
+                    // Migrate old spell format (concentration, material) to new format (duration)
+                    if (characterData.spells && Array.isArray(characterData.spells)) {
+                        characterData.spells = characterData.spells.map((spell) => {
+                            // If spell has old format fields, migrate to new format
+                            if (spell.concentration !== undefined || spell.material !== undefined) {
+                                const { concentration, material, ...rest } = spell;
+                                return {
+                                    ...rest,
+                                    duration: spell.duration || '' // Add duration field if missing
+                                };
+                            }
+                            // If spell doesn't have duration field, add it
+                            if (spell.duration === undefined) {
+                                return {
+                                    ...spell,
+                                    duration: ''
+                                };
+                            }
+                            return spell;
+                        });
                     }
                     // Validate and migrate data
                     return this.validateAndMigrateData(characterData);
@@ -1289,9 +1391,8 @@ class CharacterSheet {
             { key: 'name', placeholder: 'Fire Bolt', className: 'spell-name' },
             { key: 'level', placeholder: 'Cantrip', className: 'spell-level' },
             { key: 'castingTime', placeholder: '1 action', className: 'spell-casting-time' },
-            { key: 'concentration', placeholder: 'Concentration, Ritual', className: 'spell-concentration' },
             { key: 'range', placeholder: '120 ft', className: 'spell-range' },
-            { key: 'material', placeholder: 'Required Material', className: 'spell-material' },
+            { key: 'duration', placeholder: 'Instantaneous', className: 'spell-duration' },
             { key: 'notes', placeholder: 'Notes', className: 'spell-notes' }
         ];
         // Create input fields
@@ -1325,9 +1426,8 @@ class CharacterSheet {
             name: '',
             level: '',
             castingTime: '',
-            concentration: '',
             range: '',
-            material: '',
+            duration: '',
             notes: ''
         };
         this.data.spells.push(newSpell);
@@ -1355,6 +1455,12 @@ class CharacterSheet {
             // Save layout data
             const layoutData = this.layoutManager.getLayout();
             localStorage.setItem(this.LOCAL_LAYOUT_KEY, JSON.stringify(layoutData));
+            // Save Google Drive file info
+            const driveFileInfo = {
+                fileId: this.currentDriveFileId,
+                fileName: this.currentDriveFileName
+            };
+            localStorage.setItem(this.LOCAL_DRIVE_FILE_KEY, JSON.stringify(driveFileInfo));
         }
         catch (error) {
             console.error('Error saving to localStorage:', error);
@@ -1375,6 +1481,14 @@ class CharacterSheet {
                 const layoutData = JSON.parse(savedLayout);
                 this.layoutManager.setLayout(layoutData);
                 console.log('Loaded layout from localStorage');
+            }
+            // Load Google Drive file info
+            const savedDriveInfo = localStorage.getItem(this.LOCAL_DRIVE_FILE_KEY);
+            if (savedDriveInfo) {
+                const driveInfo = JSON.parse(savedDriveInfo);
+                this.currentDriveFileId = driveInfo.fileId || null;
+                this.currentDriveFileName = driveInfo.fileName || null;
+                console.log('Loaded Drive file info from localStorage:', driveInfo);
             }
         }
         catch (error) {
@@ -1437,11 +1551,13 @@ class CharacterSheet {
                 'sheet-layout': this.layoutManager.getLayout()
             };
             const dataToSave = JSON.stringify(fileData, null, 2);
-            const fileName = this.data.characterName
+            // Use stored filename if available, otherwise generate from character name
+            const fileName = this.currentDriveFileName || (this.data.characterName
                 ? `${this.data.characterName}-character-sheet.json`
-                : 'character-sheet.json';
+                : 'character-sheet.json');
             const result = await this.googleDriveManager.saveToGoogleDrive(fileName, dataToSave, this.currentDriveFileId || undefined);
             this.currentDriveFileId = result.fileId;
+            this.currentDriveFileName = fileName;
             this.showSaveStatus('saved', 'Saved to Google Drive');
             setTimeout(() => {
                 const statusEl = document.getElementById('saveStatus');
@@ -1493,8 +1609,9 @@ class CharacterSheet {
             // Save without fileId to create a new file
             const result = await this.googleDriveManager.saveToGoogleDrive(finalFileName, dataToSave, undefined // No fileId = create new file
             );
-            // Update current file ID to the new file
+            // Update current file ID and filename to the new file
             this.currentDriveFileId = result.fileId;
+            this.currentDriveFileName = finalFileName;
             this.showSaveStatus('saved', 'Saved as new file');
             setTimeout(() => {
                 const statusEl = document.getElementById('saveStatus');
@@ -1564,7 +1681,7 @@ class CharacterSheet {
                 // Load button
                 const loadBtn = fileItem.querySelector('.load-file-btn');
                 if (loadBtn) {
-                    loadBtn.addEventListener('click', () => this.loadFromGoogleDrive(file.id));
+                    loadBtn.addEventListener('click', () => this.loadFromGoogleDrive(file.id, file.name));
                 }
                 // Delete button
                 const deleteBtn = fileItem.querySelector('.delete-file-btn');
@@ -1583,7 +1700,7 @@ class CharacterSheet {
             statusEl.className = 'save-status';
         }
     }
-    async loadFromGoogleDrive(fileId) {
+    async loadFromGoogleDrive(fileId, fileName) {
         if (!this.googleDriveManager) {
             this.showSaveStatus('error', 'Google Drive not configured');
             return;
@@ -1610,6 +1727,7 @@ class CharacterSheet {
             // Validate and merge with defaults
             this.data = this.validateAndMigrateData(characterData);
             this.currentDriveFileId = fileId;
+            this.currentDriveFileName = fileName || null;
             // Reset history after loading
             this.history = [];
             this.historyIndex = -1;
@@ -1654,9 +1772,10 @@ class CharacterSheet {
         this.setDriveButtonsEnabled(false);
         try {
             await this.googleDriveManager.deleteFile(fileId);
-            // If this was the current file, clear the file ID
+            // If this was the current file, clear the file ID and filename
             if (this.currentDriveFileId === fileId) {
                 this.currentDriveFileId = null;
+                this.currentDriveFileName = null;
             }
             // Refresh file list
             this.showGoogleDriveFilePicker();
