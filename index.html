@@ -141,7 +141,7 @@
                             <div class="group-label">DEATH SAVES</div>
                             <div class="death-saves-fields">
                                 <div class="death-saves-field">
-                                    <label>SUCCESSES</label>
+                                    <span class="death-saves-label">SUCCESSES</span>
                                     <div class="death-checkboxes">
                                         <input type="checkbox" id="deathSave1">
                                         <input type="checkbox" id="deathSave2">
@@ -149,7 +149,7 @@
                                     </div>
                                 </div>
                                 <div class="death-saves-field">
-                                    <label>FAILURES</label>
+                                    <span class="death-saves-label">FAILURES</span>
                                     <div class="death-checkboxes">
                                         <input type="checkbox" id="deathFail1">
                                         <input type="checkbox" id="deathFail2">
@@ -178,32 +178,27 @@
                         <div class="stat-breakdown">
                             <div class="stat-field-small">
                                 <label for="strBase">Base</label>
-                                <input type="number" id="strBase" class="stat-input-small" min="1" max="30"
-                                    aria-label="Strength base score">
+                                <input type="number" id="strBase" class="stat-input-small" min="1" max="30">
                             </div>
                             <div class="stat-field-small">
                                 <label for="strRace">Species</label>
-                                <input type="number" id="strRace" class="stat-input-small" min="-5" max="10"
-                                    aria-label="Strength species bonus">
+                                <input type="number" id="strRace" class="stat-input-small" min="-5" max="10">
                             </div>
                             <div class="stat-field-small">
                                 <label for="strASI">ASI</label>
-                                <input type="number" id="strASI" class="stat-input-small" min="0" max="20"
-                                    aria-label="Strength ability score improvement">
+                                <input type="number" id="strASI" class="stat-input-small" min="0" max="20">
                             </div>
                             <div class="stat-field-small">
                                 <label for="strFeat">Feat</label>
-                                <input type="number" id="strFeat" class="stat-input-small" min="0" max="10"
-                                    aria-label="Strength feat bonus">
+                                <input type="number" id="strFeat" class="stat-input-small" min="0" max="10">
                             </div>
                             <div class="stat-field-small">
                                 <label for="strMagic">Magic</label>
-                                <input type="number" id="strMagic" class="stat-input-small" min="0" max="10"
-                                    aria-label="Strength magic item bonus">
+                                <input type="number" id="strMagic" class="stat-input-small" min="0" max="10">
                             </div>
                         </div>
                         <div class="stat-total-box">
-                            <label for="strTotal">Total</label>
+                            <span class="stat-label">Total</span>
                             <div class="stat-total" id="strTotal" role="textbox" aria-label="Strength total score">10
                             </div>
                         </div>
@@ -214,28 +209,28 @@
                         <div class="stat-label">CONSTITUTION</div>
                         <div class="stat-breakdown">
                             <div class="stat-field-small">
-                                <label>Base</label>
+                                <label for="conBase">Base</label>
                                 <input type="number" id="conBase" class="stat-input-small" min="1" max="30">
                             </div>
                             <div class="stat-field-small">
-                                <label>Species</label>
+                                <label for="conRace">Species</label>
                                 <input type="number" id="conRace" class="stat-input-small" min="-5" max="10">
                             </div>
                             <div class="stat-field-small">
-                                <label>ASI</label>
+                                <label for="conASI">ASI</label>
                                 <input type="number" id="conASI" class="stat-input-small" min="0" max="20">
                             </div>
                             <div class="stat-field-small">
-                                <label>Feat</label>
+                                <label for="conFeat">Feat</label>
                                 <input type="number" id="conFeat" class="stat-input-small" min="0" max="10">
                             </div>
                             <div class="stat-field-small">
-                                <label>Magic</label>
+                                <label for="conMagic">Magic</label>
                                 <input type="number" id="conMagic" class="stat-input-small" min="0" max="10">
                             </div>
                         </div>
                         <div class="stat-total-box">
-                            <label>Total</label>
+                            <span class="stat-label">Total</span>
                             <div class="stat-total" id="conTotal">10</div>
                         </div>
                         <input type="text" id="conMod" class="stat-modifier">
@@ -244,28 +239,28 @@
                         <div class="stat-label">DEXTERITY</div>
                         <div class="stat-breakdown">
                             <div class="stat-field-small">
-                                <label>Base</label>
+                                <label for="dexBase">Base</label>
                                 <input type="number" id="dexBase" class="stat-input-small" min="1" max="30">
                             </div>
                             <div class="stat-field-small">
-                                <label>Species</label>
+                                <label for="dexRace">Species</label>
                                 <input type="number" id="dexRace" class="stat-input-small" min="-5" max="10">
                             </div>
                             <div class="stat-field-small">
-                                <label>ASI</label>
+                                <label for="dexASI">ASI</label>
                                 <input type="number" id="dexASI" class="stat-input-small" min="0" max="20">
                             </div>
                             <div class="stat-field-small">
-                                <label>Feat</label>
+                                <label for="dexFeat">Feat</label>
                                 <input type="number" id="dexFeat" class="stat-input-small" min="0" max="10">
                             </div>
                             <div class="stat-field-small">
-                                <label>Magic</label>
+                                <label for="dexMagic">Magic</label>
                                 <input type="number" id="dexMagic" class="stat-input-small" min="0" max="10">
                             </div>
                         </div>
                         <div class="stat-total-box">
-                            <label>Total</label>
+                            <span class="stat-label">Total</span>
                             <div class="stat-total" id="dexTotal">10</div>
                         </div>
                         <input type="text" id="dexMod" class="stat-modifier">
@@ -274,28 +269,28 @@
                         <div class="stat-label">INTELLIGENCE</div>
                         <div class="stat-breakdown">
                             <div class="stat-field-small">
-                                <label>Base</label>
+                                <label for="intBase">Base</label>
                                 <input type="number" id="intBase" class="stat-input-small" min="1" max="30">
                             </div>
                             <div class="stat-field-small">
-                                <label>Species</label>
+                                <label for="intRace">Species</label>
                                 <input type="number" id="intRace" class="stat-input-small" min="-5" max="10">
                             </div>
                             <div class="stat-field-small">
-                                <label>ASI</label>
+                                <label for="intASI">ASI</label>
                                 <input type="number" id="intASI" class="stat-input-small" min="0" max="20">
                             </div>
                             <div class="stat-field-small">
-                                <label>Feat</label>
+                                <label for="intFeat">Feat</label>
                                 <input type="number" id="intFeat" class="stat-input-small" min="0" max="10">
                             </div>
                             <div class="stat-field-small">
-                                <label>Magic</label>
+                                <label for="intMagic">Magic</label>
                                 <input type="number" id="intMagic" class="stat-input-small" min="0" max="10">
                             </div>
                         </div>
                         <div class="stat-total-box">
-                            <label>Total</label>
+                            <span class="stat-label">Total</span>
                             <div class="stat-total" id="intTotal">10</div>
                         </div>
                         <input type="text" id="intMod" class="stat-modifier">
@@ -304,28 +299,28 @@
                         <div class="stat-label">WISDOM</div>
                         <div class="stat-breakdown">
                             <div class="stat-field-small">
-                                <label>Base</label>
+                                <label for="wisBase">Base</label>
                                 <input type="number" id="wisBase" class="stat-input-small" min="1" max="30">
                             </div>
                             <div class="stat-field-small">
-                                <label>Species</label>
+                                <label for="wisRace">Species</label>
                                 <input type="number" id="wisRace" class="stat-input-small" min="-5" max="10">
                             </div>
                             <div class="stat-field-small">
-                                <label>ASI</label>
+                                <label for="wisASI">ASI</label>
                                 <input type="number" id="wisASI" class="stat-input-small" min="0" max="20">
                             </div>
                             <div class="stat-field-small">
-                                <label>Feat</label>
+                                <label for="wisFeat">Feat</label>
                                 <input type="number" id="wisFeat" class="stat-input-small" min="0" max="10">
                             </div>
                             <div class="stat-field-small">
-                                <label>Magic</label>
+                                <label for="wisMagic">Magic</label>
                                 <input type="number" id="wisMagic" class="stat-input-small" min="0" max="10">
                             </div>
                         </div>
                         <div class="stat-total-box">
-                            <label>Total</label>
+                            <span class="stat-label">Total</span>
                             <div class="stat-total" id="wisTotal">10</div>
                         </div>
                         <input type="text" id="wisMod" class="stat-modifier">
@@ -334,28 +329,28 @@
                         <div class="stat-label">CHARISMA</div>
                         <div class="stat-breakdown">
                             <div class="stat-field-small">
-                                <label>Base</label>
+                                <label for="chaBase">Base</label>
                                 <input type="number" id="chaBase" class="stat-input-small" min="1" max="30">
                             </div>
                             <div class="stat-field-small">
-                                <label>Species</label>
+                                <label for="chaRace">Species</label>
                                 <input type="number" id="chaRace" class="stat-input-small" min="-5" max="10">
                             </div>
                             <div class="stat-field-small">
-                                <label>ASI</label>
+                                <label for="chaASI">ASI</label>
                                 <input type="number" id="chaASI" class="stat-input-small" min="0" max="20">
                             </div>
                             <div class="stat-field-small">
-                                <label>Feat</label>
+                                <label for="chaFeat">Feat</label>
                                 <input type="number" id="chaFeat" class="stat-input-small" min="0" max="10">
                             </div>
                             <div class="stat-field-small">
-                                <label>Magic</label>
+                                <label for="chaMagic">Magic</label>
                                 <input type="number" id="chaMagic" class="stat-input-small" min="0" max="10">
                             </div>
                         </div>
                         <div class="stat-total-box">
-                            <label>Total</label>
+                            <span class="stat-label">Total</span>
                             <div class="stat-total" id="chaTotal">10</div>
                         </div>
                         <input type="text" id="chaMod" class="stat-modifier">
@@ -449,21 +444,21 @@
                             <div class="section-title">EQUIPMENT TRAINING & PROFICIENCIES</div>
                             <div class="proficiency-categories">
                                 <div class="proficiency-category">
-                                    <label>ARMOR</label>
+                                    <span class="proficiency-header">ARMOR</span>
                                     <textarea id="armorProficiencies" rows="2"
                                         placeholder="Light, Medium, Heavy, Shields"></textarea>
                                 </div>
                                 <div class="proficiency-category">
-                                    <label>WEAPONS</label>
+                                    <span class="proficiency-header">WEAPONS</span>
                                     <textarea id="weaponProficiencies" rows="2"
                                         placeholder="Simple, Martial"></textarea>
                                 </div>
                                 <div class="proficiency-category">
-                                    <label>TOOLS</label>
+                                    <span class="proficiency-header">TOOLS</span>
                                     <textarea id="toolProficiencies" rows="2" placeholder="Tools"></textarea>
                                 </div>
                                 <div class="proficiency-category">
-                                    <label>LANGUAGES</label>
+                                    <span class="proficiency-header">LANGUAGES</span>
                                     <textarea id="languages" rows="2" placeholder="Common, Elvish"></textarea>
                                 </div>
                             </div>
@@ -510,15 +505,15 @@
                     <div class="section-title">SPELLCASTING</div>
                     <div class="spellcasting-info">
                         <div class="spell-stat">
-                            <label>SPELLCASTING ABILITY</label>
+                            <label for="spellcastingAbility">SPELLCASTING ABILITY</label>
                             <input type="text" id="spellcastingAbility">
                         </div>
                         <div class="spell-stat">
-                            <label>SPELL SAVE DC</label>
+                            <label for="spellSaveDC">SPELL SAVE DC</label>
                             <input type="number" id="spellSaveDC">
                         </div>
                         <div class="spell-stat">
-                            <label>SPELL ATTACK BONUS</label>
+                            <label for="spellAttackBonus">SPELL ATTACK BONUS</label>
                             <input type="text" id="spellAttackBonus">
                         </div>
                     </div>
@@ -526,55 +521,55 @@
                         <div class="section-title">SPELL SLOTS</div>
                         <div class="spell-slots-grid">
                             <div class="spell-slot-level">
-                                <label>Level 1</label>
+                                <label for="spellSlots1">Level 1</label>
                                 <input type="number" id="spellSlots1" min="0" max="20">
                                 <span>/</span>
                                 <input type="number" id="spellSlots1Max" min="0" max="20">
                             </div>
                             <div class="spell-slot-level">
-                                <label>Level 2</label>
+                                <label for="spellSlots2">Level 2</label>
                                 <input type="number" id="spellSlots2" min="0" max="20">
                                 <span>/</span>
                                 <input type="number" id="spellSlots2Max" min="0" max="20">
                             </div>
                             <div class="spell-slot-level">
-                                <label>Level 3</label>
+                                <label for="spellSlots3">Level 3</label>
                                 <input type="number" id="spellSlots3" min="0" max="20">
                                 <span>/</span>
                                 <input type="number" id="spellSlots3Max" min="0" max="20">
                             </div>
                             <div class="spell-slot-level">
-                                <label>Level 4</label>
+                                <label for="spellSlots4">Level 4</label>
                                 <input type="number" id="spellSlots4" min="0" max="20">
                                 <span>/</span>
                                 <input type="number" id="spellSlots4Max" min="0" max="20">
                             </div>
                             <div class="spell-slot-level">
-                                <label>Level 5</label>
+                                <label for="spellSlots5">Level 5</label>
                                 <input type="number" id="spellSlots5" min="0" max="20">
                                 <span>/</span>
                                 <input type="number" id="spellSlots5Max" min="0" max="20">
                             </div>
                             <div class="spell-slot-level">
-                                <label>Level 6</label>
+                                <label for="spellSlots6">Level 6</label>
                                 <input type="number" id="spellSlots6" min="0" max="20">
                                 <span>/</span>
                                 <input type="number" id="spellSlots6Max" min="0" max="20">
                             </div>
                             <div class="spell-slot-level">
-                                <label>Level 7</label>
+                                <label for="spellSlots7">Level 7</label>
                                 <input type="number" id="spellSlots7" min="0" max="20">
                                 <span>/</span>
                                 <input type="number" id="spellSlots7Max" min="0" max="20">
                             </div>
                             <div class="spell-slot-level">
-                                <label>Level 8</label>
+                                <label for="spellSlots8">Level 8</label>
                                 <input type="number" id="spellSlots8" min="0" max="20">
                                 <span>/</span>
                                 <input type="number" id="spellSlots8Max" min="0" max="20">
                             </div>
                             <div class="spell-slot-level">
-                                <label>Level 9</label>
+                                <label for="spellSlots9">Level 9</label>
                                 <input type="number" id="spellSlots9" min="0" max="20">
                                 <span>/</span>
                                 <input type="number" id="spellSlots9Max" min="0" max="20">
@@ -608,7 +603,7 @@
                         </tbody>
                     </table>
                     <div class="known-spells-section">
-                        <label>KNOWN SPELLS</label>
+                        <span class="section-header">KNOWN SPELLS</span>
                         <textarea id="knownSpells" rows="6" placeholder="List known spells..."></textarea>
                     </div>
                 </div>
@@ -632,23 +627,23 @@
                         <div class="section-title">COINS</div>
                         <div class="coins-grid">
                             <div class="coin-type">
-                                <label>CP</label>
+                                <label for="coinCP">CP</label>
                                 <input type="number" id="coinCP" min="0">
                             </div>
                             <div class="coin-type">
-                                <label>SP</label>
+                                <label for="coinSP">SP</label>
                                 <input type="number" id="coinSP" min="0">
                             </div>
                             <div class="coin-type">
-                                <label>EP</label>
+                                <label for="coinEP">EP</label>
                                 <input type="number" id="coinEP" min="0">
                             </div>
                             <div class="coin-type">
-                                <label>GP</label>
+                                <label for="coinGP">GP</label>
                                 <input type="number" id="coinGP" min="0">
                             </div>
                             <div class="coin-type">
-                                <label>PP</label>
+                                <label for="coinPP">PP</label>
                                 <input type="number" id="coinPP" min="0">
                             </div>
                         </div>
