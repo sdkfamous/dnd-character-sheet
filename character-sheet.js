@@ -146,13 +146,18 @@ class CharacterSheet {
         // Google Drive integration
         this.googleDriveManager = null;
         this.currentDriveFileId = null;
+        // Local storage
+        this.LOCAL_STORAGE_KEY = 'dnd_character_data';
+        this.LOCAL_LAYOUT_KEY = 'dnd_character_layout';
         // Initialize layout manager first (will be updated with saved layout in loadData)
         this.layoutManager = new LayoutManager();
         this.layoutManager.setSaveCallback(() => {
-            // Layout changed - trigger save if user wants to save
-            // For now, we'll save layout when user clicks Save button
+            this.saveToLocalStorage(); // Auto-save on layout changes
         });
-        this.data = this.loadData();
+        // Initialize with default data
+        this.data = this.getDefaultData();
+        // Try to load from localStorage
+        this.loadFromLocalStorage();
         // Initialize history with current state
         this.pushHistory();
         this.initializeGoogleDrive();
@@ -784,6 +789,7 @@ class CharacterSheet {
         }
         this.historyTimeout = window.setTimeout(() => {
             this.pushHistory();
+            this.saveToLocalStorage(); // Auto-save to localStorage
         }, 500);
     }
     // Setup ability score listeners (reduces code duplication)
@@ -1339,6 +1345,40 @@ class CharacterSheet {
         if (statusEl) {
             statusEl.textContent = message;
             statusEl.className = `save-status ${status}`;
+        }
+    }
+    // Local Storage Methods
+    saveToLocalStorage() {
+        try {
+            // Save character data
+            localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(this.data));
+            // Save layout data
+            const layoutData = this.layoutManager.getLayout();
+            localStorage.setItem(this.LOCAL_LAYOUT_KEY, JSON.stringify(layoutData));
+        }
+        catch (error) {
+            console.error('Error saving to localStorage:', error);
+        }
+    }
+    loadFromLocalStorage() {
+        try {
+            // Load character data
+            const savedData = localStorage.getItem(this.LOCAL_STORAGE_KEY);
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                this.data = this.validateAndMigrateData(parsedData);
+                console.log('Loaded character from localStorage');
+            }
+            // Load layout data
+            const savedLayout = localStorage.getItem(this.LOCAL_LAYOUT_KEY);
+            if (savedLayout) {
+                const layoutData = JSON.parse(savedLayout);
+                this.layoutManager.setLayout(layoutData);
+                console.log('Loaded layout from localStorage');
+            }
+        }
+        catch (error) {
+            console.error('Error loading from localStorage:', error);
         }
     }
     // Google Drive Integration Methods
