@@ -303,7 +303,7 @@ interface DnDCharacterData {
     };
 
     // Calculated Stats (editable)
-    proficiencyBonus: string;
+    proficiencyBonus: number;
     passivePerception: number;
 
     // Saving Throw Proficiencies
@@ -319,6 +319,8 @@ interface DnDCharacterData {
     // Combat Stats
     armorClass: number;
     shield: boolean;
+    defence: boolean;
+    dueling: boolean;
     initiative: number;
     speed: number;
     size: string;
@@ -647,6 +649,8 @@ class CharacterSheet {
             savingThrows: { ...defaults.savingThrows, ...(data.savingThrows || {}) },
             armorClass: mergeDefined(defaults.armorClass, data.armorClass),
             shield: mergeDefined(defaults.shield, data.shield),
+            defence: mergeDefined(defaults.defence, data.defence),
+            dueling: mergeDefined(defaults.dueling, data.dueling),
             initiative: mergeDefined(defaults.initiative, data.initiative),
             speed: mergeDefined(defaults.speed, data.speed),
             size: mergeDefined(defaults.size, data.size),
@@ -708,7 +712,7 @@ class CharacterSheet {
                 wis: '+0',
                 cha: '+0'
             },
-            proficiencyBonus: '+2',
+            proficiencyBonus: 2,
             passivePerception: 10,
             savingThrows: {
                 str: false,
@@ -720,6 +724,8 @@ class CharacterSheet {
             },
             armorClass: 10,
             shield: false,
+            defence: false,
+            dueling: false,
             initiative: 0,
             speed: 30,
             size: '',
@@ -798,12 +804,45 @@ class CharacterSheet {
         this.addCheckboxListener('chaSaveProf', (v) => { this.data.savingThrows.cha = v; });
 
         // Combat Stats
-        this.addInputListener('armorClass', (v) => { this.data.armorClass = parseInt(v) || 10; });
-        this.addCheckboxListener('shield', (v) => { this.data.shield = v; });
+        this.addInputListener('armorClass', (v) => {
+            const enteredAC = parseInt(v) || 10;
+            // If shield or defence is on, user is editing total AC, so calculate base AC
+            const shieldBonus = this.data.shield ? 2 : 0;
+            const defenceBonus = this.data.defence ? 1 : 0;
+            this.data.armorClass = enteredAC - shieldBonus - defenceBonus;
+            // Update display to show total AC
+            this.updateDisplayedArmorClass();
+        });
+        this.addCheckboxListener('shield', (v) => {
+            this.data.shield = v;
+            this.updateDisplayedArmorClass();
+        });
+        // Defence / Dueling: mutually exclusive; Defence adds +1 AC
+        this.addCheckboxListener('defence', (v) => {
+            this.data.defence = v;
+            if (v) {
+                this.data.dueling = false;
+                const duelingEl = document.getElementById('dueling') as HTMLInputElement;
+                if (duelingEl) duelingEl.checked = false;
+            }
+            this.updateDisplayedArmorClass();
+        });
+        this.addCheckboxListener('dueling', (v) => {
+            this.data.dueling = v;
+            if (v) {
+                this.data.defence = false;
+                const defenceEl = document.getElementById('defence') as HTMLInputElement;
+                if (defenceEl) defenceEl.checked = false;
+            }
+            this.updateDisplayedArmorClass();
+        });
         this.addInputListener('initiative', (v) => { this.data.initiative = parseInt(v) || 0; });
         this.addInputListener('speed', (v) => { this.data.speed = parseInt(v) || 30; });
         this.addInputListener('size', (v) => { this.data.size = v; });
-        this.addInputListener('proficiencyBonus', (v) => { this.data.proficiencyBonus = v; });
+        this.addInputListener('proficiencyBonus', (v) => {
+            this.data.proficiencyBonus = parseInt(v) || 2;
+            this.updateToHitBonuses();
+        });
         this.addInputListener('passivePerception', (v) => { this.data.passivePerception = parseInt(v) || 10; });
         this.addCheckboxListener('heroicInspiration', (v) => { this.data.heroicInspiration = v; });
         this.addInputListener('hitPointsMax', (v) => { this.data.hitPointsMax = parseInt(v) || 1; });
@@ -1040,6 +1079,62 @@ class CharacterSheet {
             modEl.value = modifier;
             this.data.abilityModifiers[ability] = modifier;
         }
+
+        // Update to-hit bonuses if strength or dexterity changed
+        if (ability === 'str' || ability === 'dex') {
+            this.updateToHitBonuses();
+        }
+    }
+
+    private updateDisplayedArmorClass(): void {
+        const armorClass = document.getElementById('armorClass') as HTMLInputElement;
+        if (!armorClass) return;
+
+        // Calculate displayed AC: base AC + shield bonus + defence bonus
+        const baseAC = this.data.armorClass || 10;
+        const shieldBonus = this.data.shield ? 2 : 0;
+        const defenceBonus = this.data.defence ? 1 : 0;
+        const displayedAC = baseAC + shieldBonus + defenceBonus;
+
+        // Update the displayed value (but don't change the stored base value)
+        armorClass.value = displayedAC.toString();
+    }
+
+    private updateToHitBonuses(): void {
+        // Calculate Strength to hit: STR modifier + proficiency bonus
+        const strMod = this.parseModifier(this.data.abilityModifiers.str);
+        const profBonus = this.data.proficiencyBonus || 0;
+        const strToHit = strMod + profBonus;
+
+        const strToHitEl = document.getElementById('strToHit') as HTMLInputElement;
+        if (strToHitEl) {
+            strToHitEl.value = this.formatModifier(strToHit);
+        }
+
+        // Calculate Dexterity to hit: DEX modifier + proficiency bonus
+        const dexMod = this.parseModifier(this.data.abilityModifiers.dex);
+        const dexToHit = dexMod + profBonus;
+
+        const dexToHitEl = document.getElementById('dexToHit') as HTMLInputElement;
+        if (dexToHitEl) {
+            dexToHitEl.value = this.formatModifier(dexToHit);
+        }
+    }
+
+    private parseModifier(modifier: string): number {
+        // Parse a modifier string like "+2" or "-1" into a number
+        if (!modifier) return 0;
+        const cleaned = modifier.trim().replace(/\s/g, '');
+        return parseInt(cleaned) || 0;
+    }
+
+    private formatModifier(value: number): string {
+        // Format a number as a modifier string like "+2" or "-1"
+        if (value >= 0) {
+            return '+' + value;
+        } else {
+            return value.toString();
+        }
     }
 
     private addTextareaListener(id: string, callback: (value: string) => void): void {
@@ -1254,10 +1349,14 @@ class CharacterSheet {
         if (chaSaveProf) chaSaveProf.checked = this.data.savingThrows.cha;
 
         // Combat Stats
-        const armorClass = document.getElementById('armorClass') as HTMLInputElement;
-        if (armorClass) armorClass.value = this.data.armorClass.toString();
         const shield = document.getElementById('shield') as HTMLInputElement;
         if (shield) shield.checked = this.data.shield || false;
+        const defence = document.getElementById('defence') as HTMLInputElement;
+        if (defence) defence.checked = this.data.defence || false;
+        const dueling = document.getElementById('dueling') as HTMLInputElement;
+        if (dueling) dueling.checked = this.data.dueling || false;
+        this.updateDisplayedArmorClass(); // Display AC with shield + defence bonus
+        
         const initiative = document.getElementById('initiative') as HTMLInputElement;
         if (initiative) initiative.value = this.data.initiative.toString();
         const speed = document.getElementById('speed') as HTMLInputElement;
@@ -1265,9 +1364,12 @@ class CharacterSheet {
         const size = document.getElementById('size') as HTMLInputElement;
         if (size) size.value = this.data.size || '';
         const proficiencyBonus = document.getElementById('proficiencyBonus') as HTMLInputElement;
-        if (proficiencyBonus) proficiencyBonus.value = this.data.proficiencyBonus || '+2';
+        if (proficiencyBonus) proficiencyBonus.value = (this.data.proficiencyBonus || 2).toString();
         const passivePerception = document.getElementById('passivePerception') as HTMLInputElement;
         if (passivePerception) passivePerception.value = (this.data.passivePerception || 10).toString();
+        
+        // Update calculated to-hit bonuses
+        this.updateToHitBonuses();
         const heroicInspiration = document.getElementById('heroicInspiration') as HTMLInputElement;
         if (heroicInspiration) heroicInspiration.checked = this.data.heroicInspiration || false;
         const hitPointsMax = document.getElementById('hitPointsMax') as HTMLInputElement;

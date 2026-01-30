@@ -1071,6 +1071,35 @@ button:focus-visible {
     resize: vertical;
 }
 
+.fighting-style-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.fighting-style-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 9pt;
+    font-weight: bold;
+}
+
+.fighting-style-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.fighting-style-hint {
+    font-weight: normal;
+    font-size: 8pt;
+    color: #555;
+}
+
 /* Page 2 */
 .page-2 {
     margin-top: 20px;
