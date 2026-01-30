@@ -445,8 +445,6 @@ class CharacterSheet {
             savingThrows: { ...defaults.savingThrows, ...(data.savingThrows || {}) },
             armorClass: mergeDefined(defaults.armorClass, data.armorClass),
             shield: mergeDefined(defaults.shield, data.shield),
-            defence: mergeDefined(defaults.defence, data.defence),
-            dueling: mergeDefined(defaults.dueling, data.dueling),
             initiative: mergeDefined(defaults.initiative, data.initiative),
             speed: mergeDefined(defaults.speed, data.speed),
             size: mergeDefined(defaults.size, data.size),
@@ -519,8 +517,6 @@ class CharacterSheet {
             },
             armorClass: 10,
             shield: false,
-            defence: false,
-            dueling: false,
             initiative: 0,
             speed: 30,
             size: '',
@@ -578,6 +574,7 @@ class CharacterSheet {
         this.addInputListener('characterName', (v) => { this.data.characterName = v; });
         this.addInputListener('playerName', (v) => { this.data.playerName = v; });
         this.addInputListener('race', (v) => { this.data.race = v; });
+        this.addInputListener('characterClass', (v) => { this.data.class = v; });
         this.addInputListener('level', (v) => {
             this.data.level = this.validateLevel(parseInt(v) || 1);
         });
@@ -597,36 +594,14 @@ class CharacterSheet {
         // Combat Stats
         this.addInputListener('armorClass', (v) => {
             const enteredAC = parseInt(v) || 10;
-            // If shield or defence is on, user is editing total AC, so calculate base AC
+            // If shield is on, user is editing total AC, so calculate base AC
             const shieldBonus = this.data.shield ? 2 : 0;
-            const defenceBonus = this.data.defence ? 1 : 0;
-            this.data.armorClass = enteredAC - shieldBonus - defenceBonus;
+            this.data.armorClass = enteredAC - shieldBonus;
             // Update display to show total AC
             this.updateDisplayedArmorClass();
         });
         this.addCheckboxListener('shield', (v) => {
             this.data.shield = v;
-            this.updateDisplayedArmorClass();
-        });
-        // Defence / Dueling: mutually exclusive; Defence adds +1 AC
-        this.addCheckboxListener('defence', (v) => {
-            this.data.defence = v;
-            if (v) {
-                this.data.dueling = false;
-                const duelingEl = document.getElementById('dueling');
-                if (duelingEl)
-                    duelingEl.checked = false;
-            }
-            this.updateDisplayedArmorClass();
-        });
-        this.addCheckboxListener('dueling', (v) => {
-            this.data.dueling = v;
-            if (v) {
-                this.data.defence = false;
-                const defenceEl = document.getElementById('defence');
-                if (defenceEl)
-                    defenceEl.checked = false;
-            }
             this.updateDisplayedArmorClass();
         });
         this.addInputListener('initiative', (v) => { this.data.initiative = parseInt(v) || 0; });
@@ -860,11 +835,10 @@ class CharacterSheet {
         const armorClass = document.getElementById('armorClass');
         if (!armorClass)
             return;
-        // Calculate displayed AC: base AC + shield bonus + defence bonus
+        // Calculate displayed AC: base AC + shield bonus
         const baseAC = this.data.armorClass || 10;
         const shieldBonus = this.data.shield ? 2 : 0;
-        const defenceBonus = this.data.defence ? 1 : 0;
-        const displayedAC = baseAC + shieldBonus + defenceBonus;
+        const displayedAC = baseAC + shieldBonus;
         // Update the displayed value (but don't change the stored base value)
         armorClass.value = displayedAC.toString();
     }
@@ -1039,7 +1013,7 @@ class CharacterSheet {
         const race = document.getElementById('race');
         if (race)
             race.value = this.data.race;
-        const classEl = document.getElementById('class');
+        const classEl = document.getElementById('characterClass');
         if (classEl)
             classEl.value = this.data.class;
         const level = document.getElementById('level');
@@ -1103,13 +1077,7 @@ class CharacterSheet {
         const shield = document.getElementById('shield');
         if (shield)
             shield.checked = this.data.shield || false;
-        const defence = document.getElementById('defence');
-        if (defence)
-            defence.checked = this.data.defence || false;
-        const dueling = document.getElementById('dueling');
-        if (dueling)
-            dueling.checked = this.data.dueling || false;
-        this.updateDisplayedArmorClass(); // Display AC with shield + defence bonus
+        this.updateDisplayedArmorClass(); // Display AC with shield bonus
         const initiative = document.getElementById('initiative');
         if (initiative)
             initiative.value = this.data.initiative.toString();
