@@ -736,7 +736,7 @@ button:focus-visible {
 
 .skill-row {
     display: grid;
-    grid-template-columns: 20px 1fr 60px 50px 24px;
+    grid-template-columns: 1fr 60px 50px 24px;
     gap: 6px;
     align-items: center;
     padding: 4px 0;
@@ -778,12 +778,6 @@ button:focus-visible {
     text-align: center;
     background: white;
     min-width: 40px;
-}
-
-.skill-checkbox {
-    width: 14px;
-    height: 14px;
-    cursor: pointer;
 }
 
 /* Right Column - Combat Stats */
