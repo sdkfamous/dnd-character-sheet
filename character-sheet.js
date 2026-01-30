@@ -330,11 +330,10 @@ class CharacterSheet {
                             'performance': 'cha',
                             'persuasion': 'cha'
                         };
-                        characterData.skills = Object.entries(oldSkills).map(([key, proficient], index) => ({
+                        characterData.skills = Object.entries(oldSkills).map(([key], index) => ({
                             id: (index + 1).toString(),
                             name: skillNames[key] || key,
                             ability: abilityMap[key] || 'str',
-                            proficient: proficient,
                             modifier: '+0'
                         }));
                     }
@@ -413,6 +412,14 @@ class CharacterSheet {
         });
         return result;
     }
+    normalizeSkills(skills) {
+        return skills.map(s => ({
+            id: s.id,
+            name: s.name,
+            ability: (s.ability || 'str'),
+            modifier: s.modifier ?? '+0'
+        }));
+    }
     mergeWithDefaults(data) {
         const defaults = this.getDefaultData();
         // Helper to only include defined values
@@ -450,7 +457,7 @@ class CharacterSheet {
             hitDice: mergeDefined(defaults.hitDice, data.hitDice),
             hitDiceSpent: mergeDefined(defaults.hitDiceSpent, data.hitDiceSpent),
             deathSaves: { ...defaults.deathSaves, ...(data.deathSaves || {}) },
-            skills: data.skills || defaults.skills,
+            skills: this.normalizeSkills(data.skills || defaults.skills),
             weapons: data.weapons || defaults.weapons,
             spells: data.spells || defaults.spells,
             features: mergeDefined(defaults.features, data.features),
@@ -1311,8 +1318,7 @@ class CharacterSheet {
         row.className = 'skill-row';
         row.dataset.skillId = skill.id;
         row.innerHTML = `
-            <input type="checkbox" class="skill-checkbox" ${skill.proficient ? 'checked' : ''} data-skill-id="${skill.id}">
-            <input type="text" class="skill-name" value="${skill.name}" data-skill-id="${skill.id}" placeholder="Skill name">
+            <input type="text" class="skill-name" value="${this.escapeHtml(skill.name)}" data-skill-id="${skill.id}" placeholder="Skill name">
             <select class="skill-ability-select" data-skill-id="${skill.id}">
                 <option value="str" ${skill.ability === 'str' ? 'selected' : ''}>STR</option>
                 <option value="dex" ${skill.ability === 'dex' ? 'selected' : ''}>DEX</option>
@@ -1321,22 +1327,14 @@ class CharacterSheet {
                 <option value="wis" ${skill.ability === 'wis' ? 'selected' : ''}>WIS</option>
                 <option value="cha" ${skill.ability === 'cha' ? 'selected' : ''}>CHA</option>
             </select>
-            <input type="text" class="skill-modifier" value="${skill.modifier || '+0'}" data-skill-id="${skill.id}" placeholder="+0" aria-label="Skill modifier">
+            <input type="text" class="skill-modifier" value="${this.escapeHtml(skill.modifier || '+0')}" data-skill-id="${skill.id}" placeholder="+0" aria-label="Skill modifier">
             <button type="button" class="remove-btn" data-skill-id="${skill.id}" aria-label="Remove skill">×</button>
         `;
         // Add event listeners
-        const checkbox = row.querySelector('.skill-checkbox');
         const nameInput = row.querySelector('.skill-name');
         const abilitySelect = row.querySelector('.skill-ability-select');
         const modifierInput = row.querySelector('.skill-modifier');
         const removeBtn = row.querySelector('.remove-btn');
-        checkbox.addEventListener('change', () => {
-            const skillData = this.data.skills.find(s => s.id === skill.id);
-            if (skillData) {
-                skillData.proficient = checkbox.checked;
-                this.debouncedPushHistory();
-            }
-        });
         nameInput.addEventListener('input', () => {
             const skillData = this.data.skills.find(s => s.id === skill.id);
             if (skillData) {
@@ -1368,7 +1366,6 @@ class CharacterSheet {
             id: this.nextSkillId.toString(),
             name: '',
             ability: 'str',
-            proficient: false,
             modifier: '+0'
         };
         this.data.skills.push(newSkill);
