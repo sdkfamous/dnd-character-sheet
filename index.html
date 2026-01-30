@@ -88,7 +88,7 @@
                         </div>
                     </div>
 
-                    <!-- Next Left Box: Armour Class, Shield (toggle) -->
+                    <!-- Next Left Box: Armour Class, Shield (toggle), To Hit -->
                     <div class="top-box top-box-3">
                         <div class="top-field">
                             <label for="armorClass">ARMOUR CLASS</label>
@@ -97,6 +97,14 @@
                         <div class="top-field">
                             <label for="shield">SHIELD</label>
                             <input type="checkbox" id="shield" class="top-checkbox" aria-label="Shield equipped">
+                        </div>
+                        <div class="top-field">
+                            <label for="strToHit">STRENGTH TO HIT</label>
+                            <input type="text" id="strToHit" class="top-input" readonly aria-label="Strength to hit bonus">
+                        </div>
+                        <div class="top-field">
+                            <label for="dexToHit">DEX TO HIT</label>
+                            <input type="text" id="dexToHit" class="top-input" readonly aria-label="Dexterity to hit bonus">
                         </div>
                     </div>
 
@@ -361,7 +369,7 @@
                 <div class="row-3">
                     <div class="row3-box">
                         <label for="proficiencyBonus">PROFICIENCY BONUS</label>
-                        <input type="text" id="proficiencyBonus" class="row3-input" aria-label="Proficiency bonus">
+                        <input type="number" id="proficiencyBonus" class="row3-input" min="-30" max="30" aria-label="Proficiency bonus">
                     </div>
                     <div class="row3-box">
                         <label for="initiative">INITIATIVE</label>
@@ -479,6 +487,16 @@
                         <div class="section-title">CLASS FEATURES</div>
                         <textarea id="features" rows="6"
                             placeholder="Class features, traits, and abilities..."></textarea>
+                        <div class="fighting-style-row">
+                            <label class="fighting-style-option" for="defence">
+                                <input type="checkbox" id="defence" class="fighting-style-checkbox" aria-label="Defence fighting style">
+                                <span>Defence</span>
+                            </label>
+                            <label class="fighting-style-option" for="dueling">
+                                <input type="checkbox" id="dueling" class="fighting-style-checkbox" aria-label="Dueling fighting style">
+                                <span>Dueling <span class="fighting-style-hint">(+2dmg)</span></span>
+                            </label>
+                        </div>
                     </div>
                     <div class="feats-section">
                         <div class="section-title">FEATS</div>

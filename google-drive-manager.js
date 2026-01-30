@@ -7,6 +7,7 @@ export class GoogleDriveManager {
         this.tokenClient = null;
         this.TOKEN_STORAGE_KEY = 'google_drive_access_token';
         this.EXPIRY_STORAGE_KEY = 'google_drive_token_expiry';
+        this.refreshTimer = null;
         // Try to restore token from sessionStorage
         this.restoreToken();
         // Initialize Google Identity Services
@@ -26,12 +27,44 @@ export class GoogleDriveManager {
                 setTimeout(() => {
                     window.dispatchEvent(new CustomEvent('google-signed-in'));
                 }, 100);
+                // Schedule token refresh
+                this.scheduleTokenRefresh(expiryTime);
             }
             else {
                 // Token expired, clear it
                 sessionStorage.removeItem(this.TOKEN_STORAGE_KEY);
                 sessionStorage.removeItem(this.EXPIRY_STORAGE_KEY);
             }
+        }
+    }
+    scheduleTokenRefresh(expiryTime) {
+        // Clear any existing timer
+        if (this.refreshTimer) {
+            window.clearTimeout(this.refreshTimer);
+        }
+        const now = Date.now();
+        const timeUntilExpiry = expiryTime - now;
+        // Refresh 5 minutes before expiry (or immediately if less than 5 min left)
+        const refreshIn = Math.max(0, timeUntilExpiry - (5 * 60 * 1000));
+        console.log(`Token refresh scheduled in ${Math.round(refreshIn / 1000 / 60)} minutes`);
+        this.refreshTimer = window.setTimeout(() => {
+            console.log('Auto-refreshing access token...');
+            this.silentTokenRefresh();
+        }, refreshIn);
+    }
+    silentTokenRefresh() {
+        if (!this.tokenClient) {
+            console.error('Cannot refresh token: tokenClient not initialized');
+            return;
+        }
+        // Request new token silently (this will use existing Google session)
+        try {
+            this.tokenClient.requestAccessToken({ prompt: '' });
+        }
+        catch (error) {
+            console.error('Silent token refresh failed:', error);
+            // If silent refresh fails, user will need to sign in again manually
+            window.dispatchEvent(new CustomEvent('google-session-expired'));
         }
     }
     initializeGIS() {
@@ -50,7 +83,9 @@ export class GoogleDriveManager {
                             // Token typically expires in 1 hour (3600 seconds)
                             const expiryTime = Date.now() + (response.expires_in || 3600) * 1000;
                             sessionStorage.setItem(this.EXPIRY_STORAGE_KEY, expiryTime.toString());
-                            console.log('OAuth access token received');
+                            console.log('OAuth access token received, expires in ' + (response.expires_in || 3600) + ' seconds');
+                            // Schedule automatic refresh before expiry
+                            this.scheduleTokenRefresh(expiryTime);
                             // Dispatch custom event to notify app of sign-in
                             window.dispatchEvent(new CustomEvent('google-signed-in'));
                         }
@@ -85,6 +120,11 @@ export class GoogleDriveManager {
         return this.accessToken !== null;
     }
     signOut() {
+        // Clear refresh timer
+        if (this.refreshTimer) {
+            window.clearTimeout(this.refreshTimer);
+            this.refreshTimer = null;
+        }
         if (this.accessToken) {
             // Revoke token
             window.google.accounts.oauth2.revoke(this.accessToken, () => {
