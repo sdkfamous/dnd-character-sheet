@@ -1313,8 +1313,8 @@ class CharacterSheet {
         row.className = 'skill-row';
         row.dataset.skillId = skill.id;
         row.innerHTML = `
-            <input type="text" class="skill-name" value="${this.escapeHtml(skill.name)}" data-skill-id="${skill.id}" placeholder="Skill name">
-            <select class="skill-ability-select" data-skill-id="${skill.id}">
+            <input type="text" id="skill-name-${skill.id}" class="skill-name" value="${this.escapeHtml(skill.name)}" data-skill-id="${skill.id}" placeholder="Skill name" aria-label="Skill name">
+            <select id="skill-ability-${skill.id}" class="skill-ability-select" data-skill-id="${skill.id}" aria-label="Skill ability">
                 <option value="str" ${skill.ability === 'str' ? 'selected' : ''}>STR</option>
                 <option value="dex" ${skill.ability === 'dex' ? 'selected' : ''}>DEX</option>
                 <option value="con" ${skill.ability === 'con' ? 'selected' : ''}>CON</option>
@@ -1322,7 +1322,7 @@ class CharacterSheet {
                 <option value="wis" ${skill.ability === 'wis' ? 'selected' : ''}>WIS</option>
                 <option value="cha" ${skill.ability === 'cha' ? 'selected' : ''}>CHA</option>
             </select>
-            <input type="text" class="skill-modifier" value="${this.escapeHtml(skill.modifier || '+0')}" data-skill-id="${skill.id}" placeholder="+0" aria-label="Skill modifier">
+            <input type="text" id="skill-modifier-${skill.id}" class="skill-modifier" value="${this.escapeHtml(skill.modifier || '+0')}" data-skill-id="${skill.id}" placeholder="+0" aria-label="Skill modifier">
             <button type="button" class="remove-btn" data-skill-id="${skill.id}" aria-label="Remove skill">×</button>
         `;
         // Add event listeners
@@ -1392,10 +1392,12 @@ class CharacterSheet {
     createInputField(data, key, className, placeholder, onUpdate) {
         const input = document.createElement('input');
         input.type = 'text';
+        input.id = `${className}-${data.id}`;
         input.className = className;
         input.value = String(data[key] || '');
         input.placeholder = placeholder;
         input.setAttribute(`data-${className.split('-')[0]}-id`, data.id);
+        input.setAttribute('aria-label', placeholder);
         input.addEventListener('input', () => {
             onUpdate(data, input.value);
         });
