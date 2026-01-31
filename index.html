@@ -692,6 +692,19 @@
                     <div class="section-title">NOTES</div>
                     <textarea id="notes" rows="6" placeholder="Additional notes..."></textarea>
                 </div>
+
+                <!-- Character Image -->
+                <div class="character-image-section">
+                    <div class="section-title">CHARACTER IMAGE</div>
+                    <div class="image-controls">
+                        <input type="file" id="imageFileInput" accept="image/*" style="display: none;" aria-label="Upload character image">
+                        <button type="button" id="uploadImageBtn" class="image-button">Upload Image</button>
+                        <button type="button" id="removeImageBtn" class="image-button" style="display: none;">Remove Image</button>
+                    </div>
+                    <div class="image-display" id="imageDisplay">
+                        <div class="image-placeholder">No image uploaded</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
