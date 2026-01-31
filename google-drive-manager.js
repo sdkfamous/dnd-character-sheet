@@ -235,5 +235,44 @@ export class GoogleDriveManager {
             throw error;
         }
     }
+    async uploadImage(file, fileName) {
+        try {
+            const metadata = {
+                name: fileName,
+                mimeType: file.type
+            };
+            const formData = new FormData();
+            formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            formData.append('file', file);
+            const url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+            const response = await this.makeApiRequest(url, {
+                method: 'POST',
+                body: formData
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to upload image: ${response.status} ${errorText}`);
+            }
+            const result = await response.json();
+            return { fileId: result.id };
+        }
+        catch (error) {
+            console.error('Error uploading image:', error);
+            throw error;
+        }
+    }
+    async loadImage(fileId) {
+        try {
+            const response = await this.makeApiRequest(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
+            if (!response.ok) {
+                throw new Error(`Failed to load image: ${response.status}`);
+            }
+            return await response.blob();
+        }
+        catch (error) {
+            console.error('Error loading image:', error);
+            throw error;
+        }
+    }
 }
 //# sourceMappingURL=google-drive-manager.js.map

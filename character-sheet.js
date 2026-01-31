@@ -230,6 +230,7 @@ class CharacterSheet {
         this.LOCAL_STORAGE_KEY = 'dnd_character_data';
         this.LOCAL_LAYOUT_KEY = 'dnd_character_layout';
         this.LOCAL_DRIVE_FILE_KEY = 'dnd_drive_file_info';
+        this.LOCAL_IMAGE_KEY = 'dnd_character_image';
         // Initialize layout manager first (will be updated with saved layout in loadData)
         this.layoutManager = new LayoutManager();
         this.layoutManager.setSaveCallback(() => {
@@ -475,7 +476,8 @@ class CharacterSheet {
             coins: { ...defaults.coins, ...(data.coins || {}) },
             backstory: mergeDefined(defaults.backstory, data.backstory),
             appearance: mergeDefined(defaults.appearance, data.appearance),
-            notes: mergeDefined(defaults.notes, data.notes)
+            notes: mergeDefined(defaults.notes, data.notes),
+            characterImageFileId: mergeDefined(defaults.characterImageFileId, data.characterImageFileId)
         };
     }
     getDefaultData() {
@@ -566,7 +568,8 @@ class CharacterSheet {
             },
             backstory: '',
             appearance: '',
-            notes: ''
+            notes: '',
+            characterImageFileId: null
         };
     }
     initializeEventListeners() {
@@ -791,6 +794,28 @@ class CharacterSheet {
         this.addTextareaListener('backstory', (v) => { this.data.backstory = v; });
         this.addTextareaListener('appearance', (v) => { this.data.appearance = v; });
         this.addTextareaListener('notes', (v) => { this.data.notes = v; });
+        // Character Image
+        const uploadImageBtn = document.getElementById('uploadImageBtn');
+        const imageFileInput = document.getElementById('imageFileInput');
+        const removeImageBtn = document.getElementById('removeImageBtn');
+        if (uploadImageBtn && imageFileInput) {
+            uploadImageBtn.addEventListener('click', () => {
+                imageFileInput.click();
+            });
+            imageFileInput.addEventListener('change', async () => {
+                const file = imageFileInput.files?.[0];
+                if (file) {
+                    await this.handleImageUpload(file);
+                    // Clear the input so the same file can be selected again
+                    imageFileInput.value = '';
+                }
+            });
+        }
+        if (removeImageBtn) {
+            removeImageBtn.addEventListener('click', () => {
+                this.removeCharacterImage();
+            });
+        }
     }
     addInputListener(id, callback) {
         const element = document.getElementById(id);
@@ -1265,6 +1290,8 @@ class CharacterSheet {
         this.renderSkills();
         this.renderWeapons();
         this.renderSpells();
+        // Load and display character image
+        this.loadCharacterImage();
     }
     renderSkills() {
         const skillsList = document.getElementById('skillsList');
@@ -1873,6 +1900,117 @@ class CharacterSheet {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+    // Character Image Methods
+    async handleImageUpload(file) {
+        // Validate file type and size
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file.');
+            return;
+        }
+        const maxSize = 2 * 1024 * 1024; // 2 MB
+        if (file.size > maxSize) {
+            alert('Image file is too large. Please select an image under 2 MB.');
+            return;
+        }
+        if (!this.googleDriveManager || !this.googleDriveManager.isSignedIn()) {
+            alert('Please sign in to Google Drive first to upload images.');
+            return;
+        }
+        this.setDriveButtonsEnabled(false);
+        this.showSaveStatus('saving', 'Uploading image...');
+        try {
+            // Upload to Google Drive
+            const fileName = `${this.data.characterName || 'character'}-image-${Date.now()}.${file.name.split('.').pop()}`;
+            const result = await this.googleDriveManager.uploadImage(file, fileName);
+            // Store file ID in character data
+            this.data.characterImageFileId = result.fileId;
+            // Cache image locally
+            const reader = new FileReader();
+            reader.onload = () => {
+                const base64 = reader.result;
+                localStorage.setItem(this.LOCAL_IMAGE_KEY, base64);
+                this.displayCharacterImage(base64);
+                this.showSaveStatus('saved', 'Image uploaded');
+                setTimeout(() => {
+                    const statusEl = document.getElementById('saveStatus');
+                    if (statusEl) {
+                        statusEl.textContent = '';
+                        statusEl.className = 'save-status';
+                    }
+                }, 2000);
+            };
+            reader.readAsDataURL(file);
+            this.pushHistory();
+        }
+        catch (error) {
+            console.error('Error uploading image:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            this.showSaveStatus('error', `Failed to upload image: ${errorMessage}`);
+        }
+        finally {
+            this.setDriveButtonsEnabled(true);
+        }
+    }
+    displayCharacterImage(dataUrl) {
+        const imageDisplay = document.getElementById('imageDisplay');
+        const removeBtn = document.getElementById('removeImageBtn');
+        if (!imageDisplay)
+            return;
+        imageDisplay.innerHTML = `<img src="${dataUrl}" alt="Character portrait" class="character-portrait">`;
+        if (removeBtn) {
+            removeBtn.style.display = 'inline-block';
+        }
+    }
+    removeCharacterImage() {
+        this.data.characterImageFileId = null;
+        localStorage.removeItem(this.LOCAL_IMAGE_KEY);
+        const imageDisplay = document.getElementById('imageDisplay');
+        const removeBtn = document.getElementById('removeImageBtn');
+        if (imageDisplay) {
+            imageDisplay.innerHTML = '<div class="image-placeholder">No image uploaded</div>';
+        }
+        if (removeBtn) {
+            removeBtn.style.display = 'none';
+        }
+        this.pushHistory();
+        this.showSaveStatus('saved', 'Image removed');
+        setTimeout(() => {
+            const statusEl = document.getElementById('saveStatus');
+            if (statusEl) {
+                statusEl.textContent = '';
+                statusEl.className = 'save-status';
+            }
+        }, 2000);
+    }
+    async loadCharacterImage() {
+        // Try to load from localStorage cache first
+        const cachedImage = localStorage.getItem(this.LOCAL_IMAGE_KEY);
+        if (cachedImage) {
+            this.displayCharacterImage(cachedImage);
+            return;
+        }
+        // If not cached and we have a file ID, fetch from Drive
+        if (this.data.characterImageFileId && this.googleDriveManager && this.googleDriveManager.isSignedIn()) {
+            try {
+                const blob = await this.googleDriveManager.loadImage(this.data.characterImageFileId);
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = reader.result;
+                    localStorage.setItem(this.LOCAL_IMAGE_KEY, base64);
+                    this.displayCharacterImage(base64);
+                };
+                reader.readAsDataURL(blob);
+            }
+            catch (error) {
+                console.error('Error loading character image:', error);
+                // Image might have been deleted from Drive - show placeholder
+                const imageDisplay = document.getElementById('imageDisplay');
+                if (imageDisplay) {
+                    imageDisplay.innerHTML = '<div class="image-placeholder">Image not found (may have been deleted)</div>';
+                }
+            }
+        }
     }
 }
 // Simple Accordion Function
