@@ -36,6 +36,9 @@ interface LayoutData {
         duration?: number;
         notes?: number;
     };
+    textareaHeights?: {
+        [id: string]: number;
+    };
 }
 
 // Layout Manager Class
@@ -68,7 +71,8 @@ class LayoutManager {
             weaponsWidth: 0, // 0 means use default/auto
             proficienciesWidth: 0,
             equipmentWidth: 0,
-            spellColumnWidths: {}
+            spellColumnWidths: {},
+            textareaHeights: {}
         };
     }
 
@@ -95,6 +99,9 @@ class LayoutManager {
 
         // Apply spell column widths
         this.applySpellColumnWidths();
+
+        // Apply textarea heights
+        this.applyTextareaHeights();
     }
 
     private applySpellColumnWidths(): void {
@@ -109,6 +116,17 @@ class LayoutManager {
             if (column && this.layout.spellColumnWidths && this.layout.spellColumnWidths[column as keyof typeof this.layout.spellColumnWidths]) {
                 const width = this.layout.spellColumnWidths[column as keyof typeof this.layout.spellColumnWidths];
                 (th as HTMLElement).style.width = `${width}px`;
+            }
+        });
+    }
+
+    private applyTextareaHeights(): void {
+        if (!this.layout.textareaHeights) return;
+
+        Object.entries(this.layout.textareaHeights).forEach(([id, height]) => {
+            const textarea = document.getElementById(id) as HTMLTextAreaElement;
+            if (textarea) {
+                textarea.style.height = `${height}px`;
             }
         });
     }
@@ -152,6 +170,9 @@ class LayoutManager {
 
         // Spell column resizing
         this.initializeSpellColumnResize();
+
+        // Textarea height persistence
+        this.initializeTextareaResizeListeners();
     }
 
     private initializeSpellColumnResize(): void {
@@ -266,6 +287,43 @@ class LayoutManager {
                 }
             });
         }
+    }
+
+    private initializeTextareaResizeListeners(): void {
+        // List of textarea IDs to track
+        const textareaIds = [
+            'features',
+            'feats',
+            'speciesTraits',
+            'knownSpells',
+            'notes',
+            'equipment',
+            'equipmentDetail',
+            'backstory',
+            'appearance',
+            'armorProficiencies',
+            'weaponProficiencies',
+            'toolProficiencies',
+            'languages',
+            'languagesPage2'
+        ];
+
+        textareaIds.forEach(id => {
+            const textarea = document.getElementById(id) as HTMLTextAreaElement;
+            if (!textarea) return;
+
+            // Use ResizeObserver to detect when user manually resizes the textarea
+            if (typeof ResizeObserver !== 'undefined') {
+                const resizeObserver = new ResizeObserver(() => {
+                    if (!this.layout.textareaHeights) {
+                        this.layout.textareaHeights = {};
+                    }
+                    this.layout.textareaHeights[id] = textarea.offsetHeight;
+                    this.saveLayout();
+                });
+                resizeObserver.observe(textarea);
+            }
+        });
     }
 
     private saveLayout(): void {
