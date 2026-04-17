@@ -88,15 +88,21 @@
                         </div>
                     </div>
 
-                    <!-- Next Left Box: Armour Class, Shield (toggle), To Hit -->
+                    <!-- Next Left Box: Armour Class, Shield & Helm (toggles), To Hit -->
                     <div class="top-box top-box-3">
                         <div class="top-field">
                             <label for="armorClass">ARMOUR CLASS</label>
                             <input type="number" id="armorClass" class="top-input" min="0" aria-label="Armor class">
                         </div>
-                        <div class="top-field">
-                            <label for="shield">SHIELD</label>
-                            <input type="checkbox" id="shield" class="top-checkbox" aria-label="Shield equipped">
+                        <div class="top-field top-box-3-equipment-toggles">
+                            <div class="top-toggle-field">
+                                <label for="shield">SHIELD</label>
+                                <input type="checkbox" id="shield" class="top-checkbox" aria-label="Shield equipped">
+                            </div>
+                            <div class="top-toggle-field">
+                                <label for="helm">HELM</label>
+                                <input type="checkbox" id="helm" class="top-checkbox" aria-label="Helm equipped">
+                            </div>
                         </div>
                         <div class="top-field">
                             <label for="strToHit">STRENGTH TO HIT</label>

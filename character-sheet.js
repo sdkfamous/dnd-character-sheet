@@ -496,6 +496,7 @@ class CharacterSheet {
             savingThrows: { ...defaults.savingThrows, ...(data.savingThrows || {}) },
             armorClass: mergeDefined(defaults.armorClass, data.armorClass),
             shield: mergeDefined(defaults.shield, data.shield),
+            helm: mergeDefined(defaults.helm, data.helm),
             initiative: mergeDefined(defaults.initiative, data.initiative),
             speed: mergeDefined(defaults.speed, data.speed),
             size: mergeDefined(defaults.size, data.size),
@@ -569,6 +570,7 @@ class CharacterSheet {
             },
             armorClass: 10,
             shield: false,
+            helm: false,
             initiative: 0,
             speed: 30,
             size: '',
@@ -647,14 +649,19 @@ class CharacterSheet {
         // Combat Stats
         this.addInputListener('armorClass', (v) => {
             const enteredAC = parseInt(v) || 10;
-            // If shield is on, user is editing total AC, so calculate base AC
+            // User edits total AC; derive base AC from equipment bonuses
             const shieldBonus = this.data.shield ? 2 : 0;
-            this.data.armorClass = enteredAC - shieldBonus;
+            const helmBonus = this.data.helm ? 1 : 0;
+            this.data.armorClass = enteredAC - shieldBonus - helmBonus;
             // Update display to show total AC
             this.updateDisplayedArmorClass();
         });
         this.addCheckboxListener('shield', (v) => {
             this.data.shield = v;
+            this.updateDisplayedArmorClass();
+        });
+        this.addCheckboxListener('helm', (v) => {
+            this.data.helm = v;
             this.updateDisplayedArmorClass();
         });
         this.addInputListener('initiative', (v) => { this.data.initiative = parseInt(v) || 0; });
@@ -910,10 +917,11 @@ class CharacterSheet {
         const armorClass = document.getElementById('armorClass');
         if (!armorClass)
             return;
-        // Calculate displayed AC: base AC + shield bonus
+        // Calculate displayed AC: base AC + shield (+2) and helm (+1)
         const baseAC = this.data.armorClass || 10;
         const shieldBonus = this.data.shield ? 2 : 0;
-        const displayedAC = baseAC + shieldBonus;
+        const helmBonus = this.data.helm ? 1 : 0;
+        const displayedAC = baseAC + shieldBonus + helmBonus;
         // Update the displayed value (but don't change the stored base value)
         armorClass.value = displayedAC.toString();
     }
@@ -1152,7 +1160,10 @@ class CharacterSheet {
         const shield = document.getElementById('shield');
         if (shield)
             shield.checked = this.data.shield || false;
-        this.updateDisplayedArmorClass(); // Display AC with shield bonus
+        const helm = document.getElementById('helm');
+        if (helm)
+            helm.checked = this.data.helm || false;
+        this.updateDisplayedArmorClass(); // Display AC with equipment bonuses
         const initiative = document.getElementById('initiative');
         if (initiative)
             initiative.value = this.data.initiative.toString();

@@ -402,9 +402,22 @@ button:focus-visible {
     /* Already styled by .top-box */
 }
 
-/* Top Box 3 - Armour Class, Shield */
+/* Top Box 3 - Armour Class, Shield, Helm */
 .top-box-3 {
     /* Already styled by .top-box */
+}
+
+.top-box-3-equipment-toggles {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.top-box-3 .top-toggle-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 /* Top Box 4 - Hit Points, Hit Dice, Death Saves */
