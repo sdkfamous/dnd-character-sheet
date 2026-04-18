@@ -297,6 +297,7 @@ class LayoutManager {
             'speciesTraits',
             'knownSpells',
             'notes',
+            'plans',
             'equipment',
             'equipmentDetail',
             'backstory',
@@ -461,6 +462,7 @@ interface DnDCharacterData {
     backstory: string;
     appearance: string;
     notes: string;
+    plans: string;
 
     // Character Image
     characterImageFileId: string | null;
@@ -749,6 +751,7 @@ class CharacterSheet {
             backstory: mergeDefined(defaults.backstory, data.backstory),
             appearance: mergeDefined(defaults.appearance, data.appearance),
             notes: mergeDefined(defaults.notes, data.notes),
+            plans: mergeDefined(defaults.plans, data.plans),
             characterImageFileId: mergeDefined(defaults.characterImageFileId, data.characterImageFileId)
         };
     }
@@ -843,6 +846,7 @@ class CharacterSheet {
             backstory: '',
             appearance: '',
             notes: '',
+            plans: '',
             characterImageFileId: null
         };
     }
@@ -1092,6 +1096,7 @@ class CharacterSheet {
         this.addTextareaListener('backstory', (v) => { this.data.backstory = v; });
         this.addTextareaListener('appearance', (v) => { this.data.appearance = v; });
         this.addTextareaListener('notes', (v) => { this.data.notes = v; });
+        this.addTextareaListener('plans', (v) => { this.data.plans = v; });
 
         // Character Image
         const uploadImageBtn = document.getElementById('uploadImageBtn');
@@ -1570,6 +1575,8 @@ class CharacterSheet {
         if (appearance) appearance.value = this.data.appearance || '';
         const notes = document.getElementById('notes') as HTMLTextAreaElement;
         if (notes) notes.value = this.data.notes || '';
+        const plans = document.getElementById('plans') as HTMLTextAreaElement;
+        if (plans) plans.value = this.data.plans || '';
 
         // Ensure skills, weapons, and spells are rendered
         this.renderSkills();

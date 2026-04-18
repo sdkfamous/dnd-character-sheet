@@ -1357,6 +1357,23 @@ button:focus-visible {
     resize: vertical;
 }
 
+/* Goals */
+.goals-section {
+    border: 2px solid #a67c00;
+    padding: 8px;
+    background: #fffbf0;
+}
+
+.goals-section textarea {
+    width: 100%;
+    border: 1px solid #a67c00;
+    padding: 4px;
+    font-size: 9pt;
+    font-family: inherit;
+    resize: vertical;
+    background: #fffef8;
+}
+
 /* Character Image */
 .character-image-section {
     border: 2px solid #000;
@@ -1585,6 +1602,11 @@ textarea:focus {
 .content-group[data-group="character-details"] .accordion-header {
     background: #ea9e9e;
     /* Soft pink */
+}
+
+.content-group[data-group="goals"] .accordion-header {
+    background: #e8d088;
+    /* Soft gold */
 }
 
 .accordion-header:hover {
