@@ -75,6 +75,24 @@ class LayoutManager {
             }
         });
     }
+    /** Call after dynamic textareas (e.g. goals) are mounted so saved heights apply. */
+    refreshTextareaHeights() {
+        this.applyTextareaHeights();
+    }
+    /** Persist height when user resizes a dynamically added textarea (uses textarea.id as layout key). */
+    observeTextareaHeight(textarea) {
+        const elementId = textarea.id;
+        if (!elementId || typeof ResizeObserver === 'undefined')
+            return;
+        const resizeObserver = new ResizeObserver(() => {
+            if (!this.layout.textareaHeights) {
+                this.layout.textareaHeights = {};
+            }
+            this.layout.textareaHeights[elementId] = textarea.offsetHeight;
+            this.saveLayout();
+        });
+        resizeObserver.observe(textarea);
+    }
     initializeResizeListeners() {
         // Skills section
         const skillsSection = document.getElementById('skillsSection');
@@ -227,7 +245,6 @@ class LayoutManager {
             'speciesTraits',
             'knownSpells',
             'notes',
-            'plans',
             'equipment',
             'equipmentDetail',
             'backstory',
@@ -268,6 +285,7 @@ class CharacterSheet {
         this.nextSkillId = 100;
         this.nextWeaponId = 100;
         this.nextSpellId = 100;
+        this.nextGoalId = 100;
         // Undo/Redo functionality
         this.history = [];
         this.historyIndex = -1;
@@ -529,7 +547,7 @@ class CharacterSheet {
             backstory: mergeDefined(defaults.backstory, data.backstory),
             appearance: mergeDefined(defaults.appearance, data.appearance),
             notes: mergeDefined(defaults.notes, data.notes),
-            plans: mergeDefined(defaults.plans, data.plans),
+            goals: this.normalizeGoalsFromData(data, defaults),
             characterImageFileId: mergeDefined(defaults.characterImageFileId, data.characterImageFileId)
         };
     }
@@ -623,9 +641,23 @@ class CharacterSheet {
             backstory: '',
             appearance: '',
             notes: '',
-            plans: '',
+            goals: [],
             characterImageFileId: null
         };
+    }
+    normalizeGoalsFromData(data, defaults) {
+        if (Array.isArray(data.goals)) {
+            return data.goals.map((g, i) => ({
+                id: String(g?.id ?? `${100 + i}`),
+                title: typeof g?.title === 'string' ? g.title : '',
+                text: typeof g?.text === 'string' ? g.text : '',
+                collapsed: Boolean(g?.collapsed)
+            }));
+        }
+        if (typeof data.plans === 'string' && data.plans.trim()) {
+            return [{ id: '100', title: '', text: data.plans, collapsed: false }];
+        }
+        return defaults.goals;
     }
     initializeEventListeners() {
         // Basic Info
@@ -854,7 +886,10 @@ class CharacterSheet {
         this.addTextareaListener('backstory', (v) => { this.data.backstory = v; });
         this.addTextareaListener('appearance', (v) => { this.data.appearance = v; });
         this.addTextareaListener('notes', (v) => { this.data.notes = v; });
-        this.addTextareaListener('plans', (v) => { this.data.plans = v; });
+        const addGoalBtn = document.getElementById('addGoalBtn');
+        if (addGoalBtn) {
+            addGoalBtn.addEventListener('click', () => this.addGoal());
+        }
         // Character Image
         const uploadImageBtn = document.getElementById('uploadImageBtn');
         const imageFileInput = document.getElementById('imageFileInput');
@@ -1351,13 +1386,11 @@ class CharacterSheet {
         const notes = document.getElementById('notes');
         if (notes)
             notes.value = this.data.notes || '';
-        const plans = document.getElementById('plans');
-        if (plans)
-            plans.value = this.data.plans || '';
-        // Ensure skills, weapons, and spells are rendered
+        // Ensure skills, weapons, spells, and goals are rendered
         this.renderSkills();
         this.renderWeapons();
         this.renderSpells();
+        this.renderGoals();
         // Load and display character image
         this.loadCharacterImage();
     }
@@ -1436,7 +1469,12 @@ class CharacterSheet {
         this.renderSkills();
         this.pushHistory();
     }
+    confirmDeleteItem() {
+        return window.confirm('Are you sure you want to delete this item?');
+    }
     removeSkill(id) {
+        if (!this.confirmDeleteItem())
+            return;
         this.data.skills = this.data.skills.filter(s => s.id !== id);
         this.renderSkills();
         this.pushHistory();
@@ -1520,6 +1558,8 @@ class CharacterSheet {
         this.pushHistory();
     }
     removeWeapon(id) {
+        if (!this.confirmDeleteItem())
+            return;
         this.data.weapons = this.data.weapons.filter(w => w.id !== id);
         this.renderWeapons();
         this.pushHistory();
@@ -1592,8 +1632,130 @@ class CharacterSheet {
         this.pushHistory();
     }
     removeSpell(id) {
+        if (!this.confirmDeleteItem())
+            return;
         this.data.spells = this.data.spells.filter(s => s.id !== id);
         this.renderSpells();
+        this.pushHistory();
+    }
+    renderGoals() {
+        const goalsList = document.getElementById('goalsList');
+        if (!goalsList)
+            return;
+        goalsList.innerHTML = '';
+        this.data.goals.forEach(goal => {
+            const row = this.createGoalRow(goal);
+            goalsList.appendChild(row);
+        });
+        if (this.data.goals.length > 0) {
+            const maxId = Math.max(...this.data.goals.map(g => parseInt(g.id, 10) || 0));
+            this.nextGoalId = maxId + 1;
+        }
+        this.layoutManager.refreshTextareaHeights();
+    }
+    createGoalRow(goal) {
+        const wrap = document.createElement('div');
+        wrap.className = 'goal-item' + (goal.collapsed ? ' collapsed' : '');
+        wrap.dataset.goalId = goal.id;
+        const header = document.createElement('div');
+        header.className = 'goal-accordion-header';
+        header.setAttribute('role', 'button');
+        header.tabIndex = 0;
+        header.setAttribute('aria-expanded', (!goal.collapsed).toString());
+        const titleInput = document.createElement('input');
+        titleInput.type = 'text';
+        titleInput.className = 'goal-title-input';
+        titleInput.id = `goal-title-${goal.id}`;
+        titleInput.value = goal.title;
+        titleInput.placeholder = 'Goal title';
+        titleInput.setAttribute('aria-label', 'Goal title');
+        const icon = document.createElement('span');
+        icon.className = 'goal-accordion-icon';
+        icon.textContent = '▼';
+        icon.setAttribute('aria-hidden', 'true');
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-btn';
+        removeBtn.textContent = '×';
+        removeBtn.setAttribute('aria-label', 'Remove goal');
+        header.appendChild(titleInput);
+        header.appendChild(icon);
+        header.appendChild(removeBtn);
+        const content = document.createElement('div');
+        content.className = 'goal-accordion-content';
+        const textarea = document.createElement('textarea');
+        textarea.className = 'goal-text';
+        textarea.id = `goal-text-${goal.id}`;
+        textarea.value = goal.text;
+        textarea.rows = 6;
+        textarea.placeholder = 'Plans and notes for this goal...';
+        textarea.setAttribute('aria-label', 'Goal text');
+        content.appendChild(textarea);
+        wrap.appendChild(header);
+        wrap.appendChild(content);
+        titleInput.addEventListener('click', (e) => e.stopPropagation());
+        titleInput.addEventListener('input', () => {
+            const g = this.data.goals.find(x => x.id === goal.id);
+            if (g) {
+                g.title = titleInput.value;
+                this.debouncedPushHistory();
+            }
+        });
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.removeGoal(goal.id);
+        });
+        header.addEventListener('click', (e) => {
+            if (e.target.closest('.goal-title-input') || e.target.closest('.remove-btn')) {
+                return;
+            }
+            this.toggleGoalCollapse(goal.id, wrap);
+        });
+        header.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ')
+                return;
+            if (e.target.closest('.goal-title-input'))
+                return;
+            e.preventDefault();
+            this.toggleGoalCollapse(goal.id, wrap);
+        });
+        textarea.addEventListener('input', () => {
+            const g = this.data.goals.find(x => x.id === goal.id);
+            if (g) {
+                g.text = textarea.value;
+                this.debouncedPushHistory();
+            }
+        });
+        this.layoutManager.observeTextareaHeight(textarea);
+        return wrap;
+    }
+    toggleGoalCollapse(goalId, wrap) {
+        const g = this.data.goals.find(x => x.id === goalId);
+        if (!g)
+            return;
+        g.collapsed = !g.collapsed;
+        wrap.classList.toggle('collapsed', g.collapsed);
+        const headerEl = wrap.querySelector('.goal-accordion-header');
+        headerEl?.setAttribute('aria-expanded', (!g.collapsed).toString());
+        this.debouncedPushHistory();
+    }
+    addGoal() {
+        const newGoal = {
+            id: this.nextGoalId.toString(),
+            title: '',
+            text: '',
+            collapsed: false
+        };
+        this.data.goals.push(newGoal);
+        this.nextGoalId++;
+        this.renderGoals();
+        this.pushHistory();
+    }
+    removeGoal(id) {
+        if (!this.confirmDeleteItem())
+            return;
+        this.data.goals = this.data.goals.filter(g => g.id !== id);
+        this.renderGoals();
         this.pushHistory();
     }
     showSaveStatus(status, message) {
