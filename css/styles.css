@@ -1364,14 +1364,101 @@ button:focus-visible {
     background: #fffbf0;
 }
 
-.goals-section textarea {
-    width: 100%;
+.goals-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+}
+
+.goals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.goal-item {
     border: 1px solid #a67c00;
-    padding: 4px;
+    border-radius: 4px;
+    background: #fffef8;
+    overflow: hidden;
+}
+
+.goal-accordion-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: #f5e6c8;
+    cursor: pointer;
+    user-select: none;
+}
+
+.goal-accordion-header:hover {
+    filter: brightness(0.98);
+}
+
+.goal-title-input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid transparent;
+    padding: 4px 6px;
+    font-size: 9pt;
+    font-family: inherit;
+    font-weight: bold;
+    background: transparent;
+}
+
+.goal-title-input:hover,
+.goal-title-input:focus {
+    border: 1px solid #a67c00;
+    background: #fffef8;
+    outline: none;
+}
+
+.goal-accordion-icon {
+    font-size: 12pt;
+    font-weight: bold;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.goal-item.collapsed .goal-accordion-icon {
+    transform: rotate(-90deg);
+}
+
+.goal-accordion-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.goal-item:not(.collapsed) .goal-accordion-content {
+    max-height: 10000px;
+}
+
+.goal-item.collapsed .goal-accordion-content {
+    max-height: 0 !important;
+}
+
+.goal-text {
+    width: 100%;
+    border: none;
+    border-top: 1px solid #c9a227;
+    padding: 8px;
     font-size: 9pt;
     font-family: inherit;
     resize: vertical;
     background: #fffef8;
+    box-sizing: border-box;
+    display: block;
+}
+
+.goal-accordion-header .remove-btn {
+    flex-shrink: 0;
+}
+
+.goal-accordion-header:focus {
+    outline: 2px solid #0066cc;
+    outline-offset: -2px;
 }
 
 /* Character Image */
