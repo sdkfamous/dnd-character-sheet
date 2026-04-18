@@ -227,6 +227,7 @@ class LayoutManager {
             'speciesTraits',
             'knownSpells',
             'notes',
+            'plans',
             'equipment',
             'equipmentDetail',
             'backstory',
@@ -528,6 +529,7 @@ class CharacterSheet {
             backstory: mergeDefined(defaults.backstory, data.backstory),
             appearance: mergeDefined(defaults.appearance, data.appearance),
             notes: mergeDefined(defaults.notes, data.notes),
+            plans: mergeDefined(defaults.plans, data.plans),
             characterImageFileId: mergeDefined(defaults.characterImageFileId, data.characterImageFileId)
         };
     }
@@ -621,6 +623,7 @@ class CharacterSheet {
             backstory: '',
             appearance: '',
             notes: '',
+            plans: '',
             characterImageFileId: null
         };
     }
@@ -851,6 +854,7 @@ class CharacterSheet {
         this.addTextareaListener('backstory', (v) => { this.data.backstory = v; });
         this.addTextareaListener('appearance', (v) => { this.data.appearance = v; });
         this.addTextareaListener('notes', (v) => { this.data.notes = v; });
+        this.addTextareaListener('plans', (v) => { this.data.plans = v; });
         // Character Image
         const uploadImageBtn = document.getElementById('uploadImageBtn');
         const imageFileInput = document.getElementById('imageFileInput');
@@ -1347,6 +1351,9 @@ class CharacterSheet {
         const notes = document.getElementById('notes');
         if (notes)
             notes.value = this.data.notes || '';
+        const plans = document.getElementById('plans');
+        if (plans)
+            plans.value = this.data.plans || '';
         // Ensure skills, weapons, and spells are rendered
         this.renderSkills();
         this.renderWeapons();
