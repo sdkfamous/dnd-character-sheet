@@ -5,6 +5,11 @@ import { type DriveFile, GoogleDriveManager } from './google-drive-manager.js';
 type AbilityName = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
 type AbilitySource = 'base' | 'race' | 'asi' | 'feat' | 'magic';
 
+// Raw JSON from localStorage or a Drive file, possibly in an older format.
+// It is checked field by field during migration, so it can't be typed more precisely.
+// biome-ignore lint/suspicious/noExplicitAny: untrusted saved data is validated during migration
+type SavedJson = any;
+
 interface AbilityScoreBreakdown {
     base: number;
     race: number;
@@ -79,7 +84,7 @@ class LayoutManager {
             proficienciesWidth: 0,
             equipmentWidth: 0,
             spellColumnWidths: {},
-            textareaHeights: {}
+            textareaHeights: {},
         };
     }
 
@@ -118,9 +123,9 @@ class LayoutManager {
         if (!headerRow) return;
 
         const headers = headerRow.querySelectorAll('th[data-column]');
-        headers.forEach(th => {
+        headers.forEach((th) => {
             const column = (th as HTMLElement).dataset.column;
-            if (column && this.layout.spellColumnWidths && this.layout.spellColumnWidths[column as keyof typeof this.layout.spellColumnWidths]) {
+            if (column && this.layout.spellColumnWidths?.[column as keyof typeof this.layout.spellColumnWidths]) {
                 const width = this.layout.spellColumnWidths[column as keyof typeof this.layout.spellColumnWidths];
                 (th as HTMLElement).style.width = `${width}px`;
             }
@@ -206,7 +211,7 @@ class LayoutManager {
         if (!headerRow) return;
 
         const headers = headerRow.querySelectorAll('th[data-column]');
-        headers.forEach(th => {
+        headers.forEach((th) => {
             const column = (th as HTMLElement).dataset.column;
             if (!column) return;
 
@@ -234,7 +239,9 @@ class LayoutManager {
                 if (!this.layout.spellColumnWidths) {
                     this.layout.spellColumnWidths = {};
                 }
-                this.layout.spellColumnWidths[column as keyof typeof this.layout.spellColumnWidths] = (th as HTMLElement).offsetWidth;
+                this.layout.spellColumnWidths[column as keyof typeof this.layout.spellColumnWidths] = (
+                    th as HTMLElement
+                ).offsetWidth;
                 this.saveLayout();
             };
 
@@ -249,7 +256,7 @@ class LayoutManager {
                     (th as HTMLElement).style.cursor = 'col-resize';
                     document.body.style.cursor = 'col-resize';
                     document.body.style.userSelect = 'none';
-                    
+
                     document.addEventListener('mousemove', onMouseMove);
                     document.addEventListener('mouseup', onMouseUp);
                     e.preventDefault();
@@ -331,10 +338,10 @@ class LayoutManager {
             'weaponProficiencies',
             'toolProficiencies',
             'languages',
-            'languagesPage2'
+            'languagesPage2',
         ];
 
-        textareaIds.forEach(id => {
+        textareaIds.forEach((id) => {
             const textarea = document.getElementById(id) as HTMLTextAreaElement;
             if (!textarea) return;
 
@@ -495,7 +502,6 @@ interface DnDCharacterData {
 
 class CharacterSheet {
     private data: DnDCharacterData;
-    private readonly STORAGE_KEY = 'dnd-character-sheet';
     private nextSkillId: number = 100;
     private nextWeaponId: number = 100;
     private nextSpellId: number = 100;
@@ -520,18 +526,18 @@ class CharacterSheet {
     private readonly LOCAL_IMAGE_KEY = 'dnd_character_image';
 
     constructor() {
-        // Initialize layout manager first (will be updated with saved layout in loadData)
+        // Initialize layout manager first (will be updated with saved layout in loadFromLocalStorage)
         this.layoutManager = new LayoutManager();
         this.layoutManager.setSaveCallback(() => {
             this.saveToLocalStorage(); // Auto-save on layout changes
         });
-        
+
         // Initialize with default data
         this.data = this.getDefaultData();
-        
+
         // Try to load from localStorage
         this.loadFromLocalStorage();
-        
+
         // Initialize history with current state
         this.pushHistory();
         this.initializeGoogleDrive();
@@ -543,7 +549,7 @@ class CharacterSheet {
         this.updateHistoryButtons();
     }
 
-    private validateAndMigrateData(data: any): DnDCharacterData {
+    private validateAndMigrateData(data: SavedJson): DnDCharacterData {
         try {
             // Validate structure
             if (!data || typeof data !== 'object') {
@@ -559,171 +565,54 @@ class CharacterSheet {
         }
     }
 
-    private loadData(): DnDCharacterData {
-        // Try to load from localStorage first (for backward compatibility)
-        try {
-            const saved = localStorage.getItem(this.STORAGE_KEY);
-            if (saved) {
-                try {
-                    const fileData = JSON.parse(saved);
-
-                    // Handle both old format (direct data) and new format (with character-definition and sheet-layout)
-                    let characterData: any;
-                    let layoutData: LayoutData | undefined;
-
-                    if (fileData['character-definition'] && fileData['sheet-layout']) {
-                        // New format
-                        characterData = fileData['character-definition'];
-                        layoutData = fileData['sheet-layout'];
-                    } else {
-                        // Old format - just character data
-                        characterData = fileData;
-                    }
-
-                    // Apply layout if available
-                    if (layoutData) {
-                        this.layoutManager.setLayout(layoutData);
-                    }
-
-                    // Migrate old skills format to new format
-                    if (characterData.skills && !Array.isArray(characterData.skills)) {
-                        const oldSkills = characterData.skills;
-                        const skillNames: { [key: string]: string } = {
-                            'athletics': 'Athletics',
-                            'acrobatics': 'Acrobatics',
-                            'sleight': 'Sleight of Hand',
-                            'stealth': 'Stealth',
-                            'arcana': 'Arcana',
-                            'history': 'History',
-                            'investigation': 'Investigation',
-                            'nature': 'Nature',
-                            'religion': 'Religion',
-                            'animal': 'Animal Handling',
-                            'insight': 'Insight',
-                            'medicine': 'Medicine',
-                            'perception': 'Perception',
-                            'survival': 'Survival',
-                            'deception': 'Deception',
-                            'intimidation': 'Intimidation',
-                            'performance': 'Performance',
-                            'persuasion': 'Persuasion'
-                        };
-                        const abilityMap: { [key: string]: 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha' } = {
-                            'athletics': 'str',
-                            'acrobatics': 'dex',
-                            'sleight': 'dex',
-                            'stealth': 'dex',
-                            'arcana': 'int',
-                            'history': 'int',
-                            'investigation': 'int',
-                            'nature': 'int',
-                            'religion': 'int',
-                            'animal': 'wis',
-                            'insight': 'wis',
-                            'medicine': 'wis',
-                            'perception': 'wis',
-                            'survival': 'wis',
-                            'deception': 'cha',
-                            'intimidation': 'cha',
-                            'performance': 'cha',
-                            'persuasion': 'cha'
-                        };
-                        characterData.skills = Object.entries(oldSkills).map(([key], index) => ({
-                            id: (index + 1).toString(),
-                            name: skillNames[key] || key,
-                            ability: abilityMap[key] || 'str',
-                            modifier: '+0'
-                        }));
-                    }
-                    // Ensure weapons array exists
-                    if (!characterData.weapons || !Array.isArray(characterData.weapons)) {
-                        characterData.weapons = [];
-                    }
-                    // Ensure spells array exists
-                    if (!characterData.spells || !Array.isArray(characterData.spells)) {
-                        characterData.spells = [];
-                    }
-                    // Migrate old spell format (concentration, material) to new format (duration)
-                    if (characterData.spells && Array.isArray(characterData.spells)) {
-                        characterData.spells = characterData.spells.map((spell: any) => {
-                            // If spell has old format fields, migrate to new format
-                            if (spell.concentration !== undefined || spell.material !== undefined) {
-                                const { concentration, material, ...rest } = spell;
-                                return {
-                                    ...rest,
-                                    duration: spell.duration || '' // Add duration field if missing
-                                };
-                            }
-                            // If spell doesn't have duration field, add it
-                            if (spell.duration === undefined) {
-                                return {
-                                    ...spell,
-                                    duration: ''
-                                };
-                            }
-                            return spell;
-                        });
-                    }
-                    // Validate and migrate data
-                    return this.validateAndMigrateData(characterData);
-                } catch (parseError) {
-                    console.error('Error parsing saved data:', parseError);
-                    this.showSaveStatus('error', 'Failed to parse saved character data');
-                }
-            }
-        } catch (error) {
-            console.error('Error loading character data:', error);
-            this.showSaveStatus('error', 'Failed to load saved character');
-        }
-        return this.getDefaultData();
-    }
-
-    private mergeAbilityScores(defaultScores: any, savedScores: any): any {
+    private mergeAbilityScores(defaultScores: AbilityScores, savedScores: SavedJson): AbilityScores {
         // Handle migration from old structure (single number per ability)
         if (savedScores && typeof savedScores.str === 'number') {
             // Old format - convert to new format
             const abilities = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
-            const result: any = {};
-            abilities.forEach(ability => {
+            const result = {} as AbilityScores;
+            abilities.forEach((ability) => {
                 result[ability] = {
                     base: savedScores[ability] || 10,
                     race: 0,
                     asi: 0,
                     feat: 0,
-                    magic: 0
+                    magic: 0,
                 };
             });
             return result;
         }
         // New format - merge properly
-        const result: any = {};
+        const result = {} as AbilityScores;
         const abilities = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
-        abilities.forEach(ability => {
+        abilities.forEach((ability) => {
             result[ability] = {
                 base: savedScores?.[ability]?.base ?? defaultScores[ability].base,
                 race: savedScores?.[ability]?.race ?? defaultScores[ability].race,
                 asi: savedScores?.[ability]?.asi ?? defaultScores[ability].asi,
                 feat: savedScores?.[ability]?.feat ?? defaultScores[ability].feat,
-                magic: savedScores?.[ability]?.magic ?? defaultScores[ability].magic
+                magic: savedScores?.[ability]?.magic ?? defaultScores[ability].magic,
             };
         });
         return result;
     }
 
-    private normalizeSkills(skills: Array<{ id: string; name: string; ability: string; modifier?: string; proficient?: boolean }>): Array<{ id: string; name: string; ability: AbilityName; modifier: string }> {
-        return skills.map(s => ({
+    private normalizeSkills(
+        skills: Array<{ id: string; name: string; ability: string; modifier?: string; proficient?: boolean }>,
+    ): Array<{ id: string; name: string; ability: AbilityName; modifier: string }> {
+        return skills.map((s) => ({
             id: s.id,
             name: s.name,
             ability: (s.ability || 'str') as AbilityName,
-            modifier: s.modifier ?? '+0'
+            modifier: s.modifier ?? '+0',
         }));
     }
 
-    private mergeWithDefaults(data: any): DnDCharacterData {
+    private mergeWithDefaults(data: SavedJson): DnDCharacterData {
         const defaults = this.getDefaultData();
         // Helper to only include defined values
-        const mergeDefined = (defaultVal: any, savedVal: any) => {
-            return (savedVal !== undefined && savedVal !== null) ? savedVal : defaultVal;
+        const mergeDefined = <T>(defaultVal: T, savedVal: T | null | undefined): T => {
+            return savedVal !== undefined && savedVal !== null ? savedVal : defaultVal;
         };
 
         return {
@@ -778,7 +667,7 @@ class CharacterSheet {
             appearance: mergeDefined(defaults.appearance, data.appearance),
             notes: mergeDefined(defaults.notes, data.notes),
             goals: this.normalizeGoalsFromData(data, defaults),
-            characterImageFileId: mergeDefined(defaults.characterImageFileId, data.characterImageFileId)
+            characterImageFileId: mergeDefined(defaults.characterImageFileId, data.characterImageFileId),
         };
     }
 
@@ -799,7 +688,7 @@ class CharacterSheet {
                 con: { base: 10, race: 0, asi: 0, feat: 0, magic: 0 },
                 int: { base: 10, race: 0, asi: 0, feat: 0, magic: 0 },
                 wis: { base: 10, race: 0, asi: 0, feat: 0, magic: 0 },
-                cha: { base: 10, race: 0, asi: 0, feat: 0, magic: 0 }
+                cha: { base: 10, race: 0, asi: 0, feat: 0, magic: 0 },
             } as AbilityScores,
             abilityModifiers: {
                 str: '+0',
@@ -807,7 +696,7 @@ class CharacterSheet {
                 con: '+0',
                 int: '+0',
                 wis: '+0',
-                cha: '+0'
+                cha: '+0',
             },
             proficiencyBonus: 2,
             passivePerception: 10,
@@ -817,7 +706,7 @@ class CharacterSheet {
                 con: true, // Fighter proficiency
                 int: false,
                 wis: false,
-                cha: false
+                cha: false,
             },
             armorClass: 10,
             shield: false,
@@ -833,7 +722,7 @@ class CharacterSheet {
             hitDiceSpent: 0,
             deathSaves: {
                 success: [false, false, false],
-                failure: [false, false, false]
+                failure: [false, false, false],
             },
             skills: [],
             weapons: [],
@@ -853,7 +742,7 @@ class CharacterSheet {
                 level6: { current: 0, max: 0 },
                 level7: { current: 0, max: 0 },
                 level8: { current: 0, max: 0 },
-                level9: { current: 0, max: 0 }
+                level9: { current: 0, max: 0 },
             },
             knownSpells: '',
             equipment: '',
@@ -867,23 +756,23 @@ class CharacterSheet {
                 sp: 0,
                 ep: 0,
                 gp: 0,
-                pp: 0
+                pp: 0,
             },
             backstory: '',
             appearance: '',
             notes: '',
             goals: [],
-            characterImageFileId: null
+            characterImageFileId: null,
         };
     }
 
-    private normalizeGoalsFromData(data: any, defaults: DnDCharacterData): GoalEntry[] {
+    private normalizeGoalsFromData(data: SavedJson, defaults: DnDCharacterData): GoalEntry[] {
         if (Array.isArray(data.goals)) {
-            return data.goals.map((g: any, i: number) => ({
+            return data.goals.map((g: SavedJson, i: number) => ({
                 id: String(g?.id ?? `${100 + i}`),
                 title: typeof g?.title === 'string' ? g.title : '',
                 text: typeof g?.text === 'string' ? g.text : '',
-                collapsed: Boolean(g?.collapsed)
+                collapsed: Boolean(g?.collapsed),
             }));
         }
         if (typeof data.plans === 'string' && data.plans.trim()) {
@@ -894,32 +783,60 @@ class CharacterSheet {
 
     private initializeEventListeners(): void {
         // Basic Info
-        this.addInputListener('characterName', (v) => { this.data.characterName = v; });
-        this.addInputListener('playerName', (v) => { this.data.playerName = v; });
-        this.addInputListener('race', (v) => { this.data.race = v; });
-        this.addInputListener('characterClass', (v) => { this.data.class = v; });
-        this.addInputListener('level', (v) => {
-            this.data.level = this.validateLevel(parseInt(v) || 1);
+        this.addInputListener('characterName', (v) => {
+            this.data.characterName = v;
         });
-        this.addInputListener('background', (v) => { this.data.background = v; });
-        this.addInputListener('subclass', (v) => { this.data.subclass = v; });
-        this.addInputListener('alignment', (v) => { this.data.alignment = v; });
-        this.addInputListener('experience', (v) => { this.data.experience = parseInt(v) || 0; });
+        this.addInputListener('playerName', (v) => {
+            this.data.playerName = v;
+        });
+        this.addInputListener('race', (v) => {
+            this.data.race = v;
+        });
+        this.addInputListener('characterClass', (v) => {
+            this.data.class = v;
+        });
+        this.addInputListener('level', (v) => {
+            this.data.level = this.validateLevel(parseInt(v, 10) || 1);
+        });
+        this.addInputListener('background', (v) => {
+            this.data.background = v;
+        });
+        this.addInputListener('subclass', (v) => {
+            this.data.subclass = v;
+        });
+        this.addInputListener('alignment', (v) => {
+            this.data.alignment = v;
+        });
+        this.addInputListener('experience', (v) => {
+            this.data.experience = parseInt(v, 10) || 0;
+        });
 
         // Ability Scores - setup using helper function (reduces duplication)
         this.setupAbilityScoreListeners();
 
         // Saving Throws
-        this.addCheckboxListener('strSaveProf', (v) => { this.data.savingThrows.str = v; });
-        this.addCheckboxListener('dexSaveProf', (v) => { this.data.savingThrows.dex = v; });
-        this.addCheckboxListener('conSaveProf', (v) => { this.data.savingThrows.con = v; });
-        this.addCheckboxListener('intSaveProf', (v) => { this.data.savingThrows.int = v; });
-        this.addCheckboxListener('wisSaveProf', (v) => { this.data.savingThrows.wis = v; });
-        this.addCheckboxListener('chaSaveProf', (v) => { this.data.savingThrows.cha = v; });
+        this.addCheckboxListener('strSaveProf', (v) => {
+            this.data.savingThrows.str = v;
+        });
+        this.addCheckboxListener('dexSaveProf', (v) => {
+            this.data.savingThrows.dex = v;
+        });
+        this.addCheckboxListener('conSaveProf', (v) => {
+            this.data.savingThrows.con = v;
+        });
+        this.addCheckboxListener('intSaveProf', (v) => {
+            this.data.savingThrows.int = v;
+        });
+        this.addCheckboxListener('wisSaveProf', (v) => {
+            this.data.savingThrows.wis = v;
+        });
+        this.addCheckboxListener('chaSaveProf', (v) => {
+            this.data.savingThrows.cha = v;
+        });
 
         // Combat Stats
         this.addInputListener('armorClass', (v) => {
-            const enteredAC = parseInt(v) || 10;
+            const enteredAC = parseInt(v, 10) || 10;
             // User edits total AC; derive base AC from equipment bonuses
             const shieldBonus = this.data.shield ? 2 : 0;
             const helmBonus = this.data.helm ? 1 : 0;
@@ -935,28 +852,60 @@ class CharacterSheet {
             this.data.helm = v;
             this.updateDisplayedArmorClass();
         });
-        this.addInputListener('initiative', (v) => { this.data.initiative = parseInt(v) || 0; });
-        this.addInputListener('speed', (v) => { this.data.speed = parseInt(v) || 30; });
-        this.addInputListener('size', (v) => { this.data.size = v; });
+        this.addInputListener('initiative', (v) => {
+            this.data.initiative = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('speed', (v) => {
+            this.data.speed = parseInt(v, 10) || 30;
+        });
+        this.addInputListener('size', (v) => {
+            this.data.size = v;
+        });
         this.addInputListener('proficiencyBonus', (v) => {
-            this.data.proficiencyBonus = parseInt(v) || 2;
+            this.data.proficiencyBonus = parseInt(v, 10) || 2;
             this.updateToHitBonuses();
         });
-        this.addInputListener('passivePerception', (v) => { this.data.passivePerception = parseInt(v) || 10; });
-        this.addCheckboxListener('heroicInspiration', (v) => { this.data.heroicInspiration = v; });
-        this.addInputListener('hitPointsMax', (v) => { this.data.hitPointsMax = parseInt(v) || 1; });
-        this.addInputListener('hitPointsCurrent', (v) => { this.data.hitPointsCurrent = parseInt(v) || 0; });
-        this.addInputListener('hitPointsTemp', (v) => { this.data.hitPointsTemp = parseInt(v) || 0; });
-        this.addInputListener('hitDiceSpent', (v) => { this.data.hitDiceSpent = parseInt(v) || 0; });
-        this.addInputListener('hitDice', (v) => { this.data.hitDice = v; });
+        this.addInputListener('passivePerception', (v) => {
+            this.data.passivePerception = parseInt(v, 10) || 10;
+        });
+        this.addCheckboxListener('heroicInspiration', (v) => {
+            this.data.heroicInspiration = v;
+        });
+        this.addInputListener('hitPointsMax', (v) => {
+            this.data.hitPointsMax = parseInt(v, 10) || 1;
+        });
+        this.addInputListener('hitPointsCurrent', (v) => {
+            this.data.hitPointsCurrent = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('hitPointsTemp', (v) => {
+            this.data.hitPointsTemp = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('hitDiceSpent', (v) => {
+            this.data.hitDiceSpent = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('hitDice', (v) => {
+            this.data.hitDice = v;
+        });
 
         // Death Saves
-        this.addCheckboxListener('deathSave1', (v) => { this.data.deathSaves.success[0] = v; });
-        this.addCheckboxListener('deathSave2', (v) => { this.data.deathSaves.success[1] = v; });
-        this.addCheckboxListener('deathSave3', (v) => { this.data.deathSaves.success[2] = v; });
-        this.addCheckboxListener('deathFail1', (v) => { this.data.deathSaves.failure[0] = v; });
-        this.addCheckboxListener('deathFail2', (v) => { this.data.deathSaves.failure[1] = v; });
-        this.addCheckboxListener('deathFail3', (v) => { this.data.deathSaves.failure[2] = v; });
+        this.addCheckboxListener('deathSave1', (v) => {
+            this.data.deathSaves.success[0] = v;
+        });
+        this.addCheckboxListener('deathSave2', (v) => {
+            this.data.deathSaves.success[1] = v;
+        });
+        this.addCheckboxListener('deathSave3', (v) => {
+            this.data.deathSaves.success[2] = v;
+        });
+        this.addCheckboxListener('deathFail1', (v) => {
+            this.data.deathSaves.failure[0] = v;
+        });
+        this.addCheckboxListener('deathFail2', (v) => {
+            this.data.deathSaves.failure[1] = v;
+        });
+        this.addCheckboxListener('deathFail3', (v) => {
+            this.data.deathSaves.failure[2] = v;
+        });
 
         // Skills - handled dynamically
         const addSkillBtn = document.getElementById('addSkillBtn');
@@ -975,7 +924,6 @@ class CharacterSheet {
         if (addSpellBtn) {
             addSpellBtn.addEventListener('click', () => this.addSpell());
         }
-
 
         // Google Drive buttons
         const signInBtn = document.getElementById('signInBtn');
@@ -1081,38 +1029,98 @@ class CharacterSheet {
         });
 
         // Features & Spells
-        this.addTextareaListener('features', (v) => { this.data.features = v; });
-        this.addTextareaListener('feats', (v) => { this.data.feats = v; });
-        this.addTextareaListener('speciesTraits', (v) => { this.data.speciesTraits = v; });
-        this.addInputListener('spellSlots1', (v) => { this.data.spellSlots.level1.current = parseInt(v) || 0; });
-        this.addInputListener('spellSlots2', (v) => { this.data.spellSlots.level2.current = parseInt(v) || 0; });
-        this.addInputListener('spellSlots3', (v) => { this.data.spellSlots.level3.current = parseInt(v) || 0; });
-        this.addInputListener('spellSlots4', (v) => { this.data.spellSlots.level4.current = parseInt(v) || 0; });
-        this.addInputListener('spellSlots5', (v) => { this.data.spellSlots.level5.current = parseInt(v) || 0; });
-        this.addInputListener('spellSlots6', (v) => { this.data.spellSlots.level6.current = parseInt(v) || 0; });
-        this.addInputListener('spellSlots7', (v) => { this.data.spellSlots.level7.current = parseInt(v) || 0; });
-        this.addInputListener('spellSlots8', (v) => { this.data.spellSlots.level8.current = parseInt(v) || 0; });
-        this.addInputListener('spellSlots9', (v) => { this.data.spellSlots.level9.current = parseInt(v) || 0; });
-        this.addInputListener('spellSlots1Max', (v) => { this.data.spellSlots.level1.max = parseInt(v) || 0; });
-        this.addInputListener('spellSlots2Max', (v) => { this.data.spellSlots.level2.max = parseInt(v) || 0; });
-        this.addInputListener('spellSlots3Max', (v) => { this.data.spellSlots.level3.max = parseInt(v) || 0; });
-        this.addInputListener('spellSlots4Max', (v) => { this.data.spellSlots.level4.max = parseInt(v) || 0; });
-        this.addInputListener('spellSlots5Max', (v) => { this.data.spellSlots.level5.max = parseInt(v) || 0; });
-        this.addInputListener('spellSlots6Max', (v) => { this.data.spellSlots.level6.max = parseInt(v) || 0; });
-        this.addInputListener('spellSlots7Max', (v) => { this.data.spellSlots.level7.max = parseInt(v) || 0; });
-        this.addInputListener('spellSlots8Max', (v) => { this.data.spellSlots.level8.max = parseInt(v) || 0; });
-        this.addInputListener('spellSlots9Max', (v) => { this.data.spellSlots.level9.max = parseInt(v) || 0; });
-        this.addInputListener('spellcastingAbility', (v) => { this.data.spellcastingAbility = v; });
-        this.addInputListener('spellSaveDC', (v) => { this.data.spellSaveDC = parseInt(v) || 0; });
-        this.addInputListener('spellAttackBonus', (v) => { this.data.spellAttackBonus = v; });
-        this.addTextareaListener('knownSpells', (v) => { this.data.knownSpells = v; });
+        this.addTextareaListener('features', (v) => {
+            this.data.features = v;
+        });
+        this.addTextareaListener('feats', (v) => {
+            this.data.feats = v;
+        });
+        this.addTextareaListener('speciesTraits', (v) => {
+            this.data.speciesTraits = v;
+        });
+        this.addInputListener('spellSlots1', (v) => {
+            this.data.spellSlots.level1.current = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots2', (v) => {
+            this.data.spellSlots.level2.current = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots3', (v) => {
+            this.data.spellSlots.level3.current = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots4', (v) => {
+            this.data.spellSlots.level4.current = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots5', (v) => {
+            this.data.spellSlots.level5.current = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots6', (v) => {
+            this.data.spellSlots.level6.current = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots7', (v) => {
+            this.data.spellSlots.level7.current = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots8', (v) => {
+            this.data.spellSlots.level8.current = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots9', (v) => {
+            this.data.spellSlots.level9.current = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots1Max', (v) => {
+            this.data.spellSlots.level1.max = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots2Max', (v) => {
+            this.data.spellSlots.level2.max = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots3Max', (v) => {
+            this.data.spellSlots.level3.max = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots4Max', (v) => {
+            this.data.spellSlots.level4.max = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots5Max', (v) => {
+            this.data.spellSlots.level5.max = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots6Max', (v) => {
+            this.data.spellSlots.level6.max = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots7Max', (v) => {
+            this.data.spellSlots.level7.max = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots8Max', (v) => {
+            this.data.spellSlots.level8.max = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellSlots9Max', (v) => {
+            this.data.spellSlots.level9.max = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellcastingAbility', (v) => {
+            this.data.spellcastingAbility = v;
+        });
+        this.addInputListener('spellSaveDC', (v) => {
+            this.data.spellSaveDC = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('spellAttackBonus', (v) => {
+            this.data.spellAttackBonus = v;
+        });
+        this.addTextareaListener('knownSpells', (v) => {
+            this.data.knownSpells = v;
+        });
 
         // Equipment & Proficiencies
-        this.addTextareaListener('equipment', (v) => { this.data.equipment = v; });
-        this.addTextareaListener('equipmentDetail', (v) => { this.data.equipmentDetail = v; });
-        this.addTextareaListener('armorProficiencies', (v) => { this.data.armorProficiencies = v; });
-        this.addTextareaListener('weaponProficiencies', (v) => { this.data.weaponProficiencies = v; });
-        this.addTextareaListener('toolProficiencies', (v) => { this.data.toolProficiencies = v; });
+        this.addTextareaListener('equipment', (v) => {
+            this.data.equipment = v;
+        });
+        this.addTextareaListener('equipmentDetail', (v) => {
+            this.data.equipmentDetail = v;
+        });
+        this.addTextareaListener('armorProficiencies', (v) => {
+            this.data.armorProficiencies = v;
+        });
+        this.addTextareaListener('weaponProficiencies', (v) => {
+            this.data.weaponProficiencies = v;
+        });
+        this.addTextareaListener('toolProficiencies', (v) => {
+            this.data.toolProficiencies = v;
+        });
         this.addTextareaListener('languages', (v) => {
             this.data.languages = v;
             // Sync with page 2 languages field
@@ -1127,16 +1135,32 @@ class CharacterSheet {
         });
 
         // Coins
-        this.addInputListener('coinCP', (v) => { this.data.coins.cp = parseInt(v) || 0; });
-        this.addInputListener('coinSP', (v) => { this.data.coins.sp = parseInt(v) || 0; });
-        this.addInputListener('coinEP', (v) => { this.data.coins.ep = parseInt(v) || 0; });
-        this.addInputListener('coinGP', (v) => { this.data.coins.gp = parseInt(v) || 0; });
-        this.addInputListener('coinPP', (v) => { this.data.coins.pp = parseInt(v) || 0; });
+        this.addInputListener('coinCP', (v) => {
+            this.data.coins.cp = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('coinSP', (v) => {
+            this.data.coins.sp = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('coinEP', (v) => {
+            this.data.coins.ep = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('coinGP', (v) => {
+            this.data.coins.gp = parseInt(v, 10) || 0;
+        });
+        this.addInputListener('coinPP', (v) => {
+            this.data.coins.pp = parseInt(v, 10) || 0;
+        });
 
         // Backstory & Appearance
-        this.addTextareaListener('backstory', (v) => { this.data.backstory = v; });
-        this.addTextareaListener('appearance', (v) => { this.data.appearance = v; });
-        this.addTextareaListener('notes', (v) => { this.data.notes = v; });
+        this.addTextareaListener('backstory', (v) => {
+            this.data.backstory = v;
+        });
+        this.addTextareaListener('appearance', (v) => {
+            this.data.appearance = v;
+        });
+        this.addTextareaListener('notes', (v) => {
+            this.data.notes = v;
+        });
 
         const addGoalBtn = document.getElementById('addGoalBtn');
         if (addGoalBtn) {
@@ -1255,13 +1279,13 @@ class CharacterSheet {
         // Parse a modifier string like "+2" or "-1" into a number
         if (!modifier) return 0;
         const cleaned = modifier.trim().replace(/\s/g, '');
-        return parseInt(cleaned) || 0;
+        return parseInt(cleaned, 10) || 0;
     }
 
     private formatModifier(value: number): string {
         // Format a number as a modifier string like "+2" or "-1"
         if (value >= 0) {
-            return '+' + value;
+            return `+${value}`;
         } else {
             return value.toString();
         }
@@ -1299,11 +1323,6 @@ class CharacterSheet {
 
     private validateLevel(level: number): number {
         return Math.max(1, Math.min(20, level));
-    }
-
-    private validateAbilityModifier(value: number): number {
-        // Modifiers can go negative, but typically -5 to +10
-        return Math.max(-5, Math.min(10, value));
     }
 
     // Undo/Redo methods
@@ -1375,8 +1394,8 @@ class CharacterSheet {
         const abilities: AbilityName[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
         const sources: AbilitySource[] = ['base', 'race', 'asi', 'feat', 'magic'];
 
-        abilities.forEach(ability => {
-            sources.forEach(source => {
+        abilities.forEach((ability) => {
+            sources.forEach((source) => {
                 // Handle special casing for ASI (all caps in HTML)
                 let fieldSuffix: string;
                 if (source === 'asi') {
@@ -1388,15 +1407,15 @@ class CharacterSheet {
 
                 this.addInputListener(fieldName, (v) => {
                     // Parse the value, allowing empty string to be treated as 0
-                    const parsedValue = v === '' ? 0 : parseInt(v);
+                    const parsedValue = v === '' ? 0 : parseInt(v, 10);
 
                     if (source === 'base') {
                         // Base score: default 10, minimum 1, maximum 30
-                        const value = isNaN(parsedValue) ? 10 : Math.max(1, Math.min(30, parsedValue));
+                        const value = Number.isNaN(parsedValue) ? 10 : Math.max(1, Math.min(30, parsedValue));
                         this.data.abilityScores[ability][source] = value;
                     } else {
                         // Modifiers (race, asi, feat, magic): can be 0 or negative, validate range
-                        const value = isNaN(parsedValue) ? 0 : Math.max(-10, Math.min(20, parsedValue));
+                        const value = Number.isNaN(parsedValue) ? 0 : Math.max(-10, Math.min(20, parsedValue));
                         this.data.abilityScores[ability][source] = value;
                     }
 
@@ -1412,7 +1431,6 @@ class CharacterSheet {
             });
         });
     }
-
 
     private updateAll(): void {
         // Populate all fields with current data
@@ -1445,7 +1463,7 @@ class CharacterSheet {
 
         // Ability Scores - populate all fields and calculate totals/modifiers
         const abilities: AbilityName[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
-        abilities.forEach(ability => {
+        abilities.forEach((ability) => {
             const scores = this.data.abilityScores[ability];
 
             // Populate individual fields
@@ -1484,7 +1502,7 @@ class CharacterSheet {
         const helm = document.getElementById('helm') as HTMLInputElement;
         if (helm) helm.checked = this.data.helm || false;
         this.updateDisplayedArmorClass(); // Display AC with equipment bonuses
-        
+
         const initiative = document.getElementById('initiative') as HTMLInputElement;
         if (initiative) initiative.value = this.data.initiative.toString();
         const speed = document.getElementById('speed') as HTMLInputElement;
@@ -1495,7 +1513,7 @@ class CharacterSheet {
         if (proficiencyBonus) proficiencyBonus.value = (this.data.proficiencyBonus || 2).toString();
         const passivePerception = document.getElementById('passivePerception') as HTMLInputElement;
         if (passivePerception) passivePerception.value = (this.data.passivePerception || 10).toString();
-        
+
         // Update calculated to-hit bonuses
         this.updateToHitBonuses();
         const heroicInspiration = document.getElementById('heroicInspiration') as HTMLInputElement;
@@ -1582,24 +1600,43 @@ class CharacterSheet {
         // Equipment & Proficiencies
         const equipment = document.getElementById('equipment') as HTMLTextAreaElement;
         if (equipment) {
-            const value = (this.data.equipment !== undefined && this.data.equipment !== null) ? this.data.equipment : '';
+            const value = this.data.equipment !== undefined && this.data.equipment !== null ? this.data.equipment : '';
             equipment.value = value;
         }
         const equipmentDetail = document.getElementById('equipmentDetail') as HTMLTextAreaElement;
-        if (equipmentDetail) equipmentDetail.value = (this.data.equipmentDetail !== undefined && this.data.equipmentDetail !== null) ? this.data.equipmentDetail : '';
+        if (equipmentDetail)
+            equipmentDetail.value =
+                this.data.equipmentDetail !== undefined && this.data.equipmentDetail !== null
+                    ? this.data.equipmentDetail
+                    : '';
         const armorProficiencies = document.getElementById('armorProficiencies') as HTMLTextAreaElement;
         if (armorProficiencies) {
-            const value = (this.data.armorProficiencies !== undefined && this.data.armorProficiencies !== null) ? this.data.armorProficiencies : '';
+            const value =
+                this.data.armorProficiencies !== undefined && this.data.armorProficiencies !== null
+                    ? this.data.armorProficiencies
+                    : '';
             armorProficiencies.value = value;
         }
         const weaponProficiencies = document.getElementById('weaponProficiencies') as HTMLTextAreaElement;
-        if (weaponProficiencies) weaponProficiencies.value = (this.data.weaponProficiencies !== undefined && this.data.weaponProficiencies !== null) ? this.data.weaponProficiencies : '';
+        if (weaponProficiencies)
+            weaponProficiencies.value =
+                this.data.weaponProficiencies !== undefined && this.data.weaponProficiencies !== null
+                    ? this.data.weaponProficiencies
+                    : '';
         const toolProficiencies = document.getElementById('toolProficiencies') as HTMLTextAreaElement;
-        if (toolProficiencies) toolProficiencies.value = (this.data.toolProficiencies !== undefined && this.data.toolProficiencies !== null) ? this.data.toolProficiencies : '';
+        if (toolProficiencies)
+            toolProficiencies.value =
+                this.data.toolProficiencies !== undefined && this.data.toolProficiencies !== null
+                    ? this.data.toolProficiencies
+                    : '';
         const languages = document.getElementById('languages') as HTMLTextAreaElement;
-        if (languages) languages.value = (this.data.languages !== undefined && this.data.languages !== null) ? this.data.languages : '';
+        if (languages)
+            languages.value =
+                this.data.languages !== undefined && this.data.languages !== null ? this.data.languages : '';
         const languagesPage2 = document.getElementById('languagesPage2') as HTMLTextAreaElement;
-        if (languagesPage2) languagesPage2.value = (this.data.languages !== undefined && this.data.languages !== null) ? this.data.languages : '';
+        if (languagesPage2)
+            languagesPage2.value =
+                this.data.languages !== undefined && this.data.languages !== null ? this.data.languages : '';
 
         // Coins
         const coinCP = document.getElementById('coinCP') as HTMLInputElement;
@@ -1631,21 +1668,20 @@ class CharacterSheet {
         this.loadCharacterImage();
     }
 
-
     private renderSkills(): void {
         const skillsList = document.getElementById('skillsList');
         if (!skillsList) return;
 
         skillsList.innerHTML = '';
 
-        this.data.skills.forEach(skill => {
+        this.data.skills.forEach((skill) => {
             const row = this.createSkillRow(skill);
             skillsList.appendChild(row);
         });
 
         // Update max IDs
         if (this.data.skills.length > 0) {
-            const maxId = Math.max(...this.data.skills.map(s => parseInt(s.id)));
+            const maxId = Math.max(...this.data.skills.map((s) => parseInt(s.id, 10)));
             this.nextSkillId = maxId + 1;
         }
     }
@@ -1676,7 +1712,7 @@ class CharacterSheet {
         const removeBtn = row.querySelector('.remove-btn') as HTMLButtonElement;
 
         nameInput.addEventListener('input', () => {
-            const skillData = this.data.skills.find(s => s.id === skill.id);
+            const skillData = this.data.skills.find((s) => s.id === skill.id);
             if (skillData) {
                 skillData.name = nameInput.value;
                 this.debouncedPushHistory();
@@ -1684,7 +1720,7 @@ class CharacterSheet {
         });
 
         abilitySelect.addEventListener('change', () => {
-            const skillData = this.data.skills.find(s => s.id === skill.id);
+            const skillData = this.data.skills.find((s) => s.id === skill.id);
             if (skillData) {
                 skillData.ability = abilitySelect.value as AbilityName;
                 this.debouncedPushHistory();
@@ -1692,7 +1728,7 @@ class CharacterSheet {
         });
 
         modifierInput.addEventListener('input', () => {
-            const skillData = this.data.skills.find(s => s.id === skill.id);
+            const skillData = this.data.skills.find((s) => s.id === skill.id);
             if (skillData) {
                 skillData.modifier = modifierInput.value;
                 this.debouncedPushHistory();
@@ -1711,7 +1747,7 @@ class CharacterSheet {
             id: this.nextSkillId.toString(),
             name: '',
             ability: 'str' as const,
-            modifier: '+0'
+            modifier: '+0',
         };
         this.data.skills.push(newSkill);
         this.nextSkillId++;
@@ -1725,11 +1761,10 @@ class CharacterSheet {
 
     private removeSkill(id: string): void {
         if (!this.confirmDeleteItem()) return;
-        this.data.skills = this.data.skills.filter(s => s.id !== id);
+        this.data.skills = this.data.skills.filter((s) => s.id !== id);
         this.renderSkills();
         this.pushHistory();
     }
-
 
     private renderWeapons(): void {
         const weaponsBody = document.getElementById('weaponsTableBody');
@@ -1737,14 +1772,14 @@ class CharacterSheet {
 
         weaponsBody.innerHTML = '';
 
-        this.data.weapons.forEach(weapon => {
+        this.data.weapons.forEach((weapon) => {
             const row = this.createWeaponRow(weapon);
             weaponsBody.appendChild(row);
         });
 
         // Update max IDs
         if (this.data.weapons.length > 0) {
-            const maxId = Math.max(...this.data.weapons.map(w => parseInt(w.id)));
+            const maxId = Math.max(...this.data.weapons.map((w) => parseInt(w.id, 10)));
             this.nextWeaponId = maxId + 1;
         }
     }
@@ -1755,7 +1790,7 @@ class CharacterSheet {
         key: keyof T,
         className: string,
         placeholder: string,
-        onUpdate: (data: T, value: string) => void
+        onUpdate: (data: T, value: string) => void,
     ): HTMLInputElement {
         const input = document.createElement('input');
         input.type = 'text';
@@ -1771,7 +1806,13 @@ class CharacterSheet {
         return input;
     }
 
-    private createWeaponRow(weapon: { id: string; name: string; atkBonus: string; damage: string; notes: string }): HTMLElement {
+    private createWeaponRow(weapon: {
+        id: string;
+        name: string;
+        atkBonus: string;
+        damage: string;
+        notes: string;
+    }): HTMLElement {
         const row = document.createElement('tr');
         row.dataset.weaponId = weapon.id;
 
@@ -1780,16 +1821,22 @@ class CharacterSheet {
             { key: 'name' as const, placeholder: 'Weapon name', className: 'weapon-name' },
             { key: 'atkBonus' as const, placeholder: '+6', className: 'weapon-atk' },
             { key: 'damage' as const, placeholder: '1d8+3 slashing', className: 'weapon-damage' },
-            { key: 'notes' as const, placeholder: 'Notes', className: 'weapon-notes' }
+            { key: 'notes' as const, placeholder: 'Notes', className: 'weapon-notes' },
         ];
 
         // Create input fields
-        weaponFields.forEach(field => {
+        weaponFields.forEach((field) => {
             const td = document.createElement('td');
-            const input = this.createInputField(weapon, field.key, field.className, field.placeholder, (data, value) => {
-                (data as any)[field.key] = value;
-                this.debouncedPushHistory();
-            });
+            const input = this.createInputField(
+                weapon,
+                field.key,
+                field.className,
+                field.placeholder,
+                (data, value) => {
+                    data[field.key] = value;
+                    this.debouncedPushHistory();
+                },
+            );
             td.appendChild(input);
             row.appendChild(td);
         });
@@ -1811,14 +1858,13 @@ class CharacterSheet {
         return row;
     }
 
-
     private addWeapon(): void {
         const newWeapon = {
             id: this.nextWeaponId.toString(),
             name: '',
             atkBonus: '',
             damage: '',
-            notes: ''
+            notes: '',
         };
         this.data.weapons.push(newWeapon);
         this.nextWeaponId++;
@@ -1828,7 +1874,7 @@ class CharacterSheet {
 
     private removeWeapon(id: string): void {
         if (!this.confirmDeleteItem()) return;
-        this.data.weapons = this.data.weapons.filter(w => w.id !== id);
+        this.data.weapons = this.data.weapons.filter((w) => w.id !== id);
         this.renderWeapons();
         this.pushHistory();
     }
@@ -1839,19 +1885,27 @@ class CharacterSheet {
 
         spellsBody.innerHTML = '';
 
-        this.data.spells.forEach(spell => {
+        this.data.spells.forEach((spell) => {
             const row = this.createSpellRow(spell);
             spellsBody.appendChild(row);
         });
 
         // Update max IDs
         if (this.data.spells.length > 0) {
-            const maxId = Math.max(...this.data.spells.map(s => parseInt(s.id)));
+            const maxId = Math.max(...this.data.spells.map((s) => parseInt(s.id, 10)));
             this.nextSpellId = maxId + 1;
         }
     }
 
-    private createSpellRow(spell: { id: string; name: string; level: string; castingTime: string; range: string; duration: string; notes: string }): HTMLElement {
+    private createSpellRow(spell: {
+        id: string;
+        name: string;
+        level: string;
+        castingTime: string;
+        range: string;
+        duration: string;
+        notes: string;
+    }): HTMLElement {
         const row = document.createElement('tr');
         row.dataset.spellId = spell.id;
 
@@ -1862,14 +1916,14 @@ class CharacterSheet {
             { key: 'castingTime' as const, placeholder: '1 action', className: 'spell-casting-time' },
             { key: 'range' as const, placeholder: '120 ft', className: 'spell-range' },
             { key: 'duration' as const, placeholder: 'Instantaneous', className: 'spell-duration' },
-            { key: 'notes' as const, placeholder: 'Notes', className: 'spell-notes' }
+            { key: 'notes' as const, placeholder: 'Notes', className: 'spell-notes' },
         ];
 
         // Create input fields
-        spellFields.forEach(field => {
+        spellFields.forEach((field) => {
             const td = document.createElement('td');
             const input = this.createInputField(spell, field.key, field.className, field.placeholder, (data, value) => {
-                (data as any)[field.key] = value;
+                data[field.key] = value;
                 this.debouncedPushHistory();
             });
             td.appendChild(input);
@@ -1901,7 +1955,7 @@ class CharacterSheet {
             castingTime: '',
             range: '',
             duration: '',
-            notes: ''
+            notes: '',
         };
         this.data.spells.push(newSpell);
         this.nextSpellId++;
@@ -1911,7 +1965,7 @@ class CharacterSheet {
 
     private removeSpell(id: string): void {
         if (!this.confirmDeleteItem()) return;
-        this.data.spells = this.data.spells.filter(s => s.id !== id);
+        this.data.spells = this.data.spells.filter((s) => s.id !== id);
         this.renderSpells();
         this.pushHistory();
     }
@@ -1922,13 +1976,13 @@ class CharacterSheet {
 
         goalsList.innerHTML = '';
 
-        this.data.goals.forEach(goal => {
+        this.data.goals.forEach((goal) => {
             const row = this.createGoalRow(goal);
             goalsList.appendChild(row);
         });
 
         if (this.data.goals.length > 0) {
-            const maxId = Math.max(...this.data.goals.map(g => parseInt(g.id, 10) || 0));
+            const maxId = Math.max(...this.data.goals.map((g) => parseInt(g.id, 10) || 0));
             this.nextGoalId = maxId + 1;
         }
 
@@ -1937,7 +1991,7 @@ class CharacterSheet {
 
     private createGoalRow(goal: GoalEntry): HTMLElement {
         const wrap = document.createElement('div');
-        wrap.className = 'goal-item' + (goal.collapsed ? ' collapsed' : '');
+        wrap.className = `goal-item${goal.collapsed ? ' collapsed' : ''}`;
         wrap.dataset.goalId = goal.id;
 
         const header = document.createElement('div');
@@ -1986,7 +2040,7 @@ class CharacterSheet {
 
         titleInput.addEventListener('click', (e) => e.stopPropagation());
         titleInput.addEventListener('input', () => {
-            const g = this.data.goals.find(x => x.id === goal.id);
+            const g = this.data.goals.find((x) => x.id === goal.id);
             if (g) {
                 g.title = titleInput.value;
                 this.debouncedPushHistory();
@@ -1999,7 +2053,10 @@ class CharacterSheet {
         });
 
         header.addEventListener('click', (e) => {
-            if ((e.target as HTMLElement).closest('.goal-title-input') || (e.target as HTMLElement).closest('.remove-btn')) {
+            if (
+                (e.target as HTMLElement).closest('.goal-title-input') ||
+                (e.target as HTMLElement).closest('.remove-btn')
+            ) {
                 return;
             }
             this.toggleGoalCollapse(goal.id, wrap);
@@ -2013,7 +2070,7 @@ class CharacterSheet {
         });
 
         textarea.addEventListener('input', () => {
-            const g = this.data.goals.find(x => x.id === goal.id);
+            const g = this.data.goals.find((x) => x.id === goal.id);
             if (g) {
                 g.text = textarea.value;
                 this.debouncedPushHistory();
@@ -2026,7 +2083,7 @@ class CharacterSheet {
     }
 
     private toggleGoalCollapse(goalId: string, wrap: HTMLElement): void {
-        const g = this.data.goals.find(x => x.id === goalId);
+        const g = this.data.goals.find((x) => x.id === goalId);
         if (!g) return;
         g.collapsed = !g.collapsed;
         wrap.classList.toggle('collapsed', g.collapsed);
@@ -2040,7 +2097,7 @@ class CharacterSheet {
             id: this.nextGoalId.toString(),
             title: '',
             text: '',
-            collapsed: false
+            collapsed: false,
         };
         this.data.goals.push(newGoal);
         this.nextGoalId++;
@@ -2050,7 +2107,7 @@ class CharacterSheet {
 
     private removeGoal(id: string): void {
         if (!this.confirmDeleteItem()) return;
-        this.data.goals = this.data.goals.filter(g => g.id !== id);
+        this.data.goals = this.data.goals.filter((g) => g.id !== id);
         this.renderGoals();
         this.pushHistory();
     }
@@ -2069,15 +2126,15 @@ class CharacterSheet {
         try {
             // Save character data
             localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(this.data));
-            
+
             // Save layout data
             const layoutData = this.layoutManager.getLayout();
             localStorage.setItem(this.LOCAL_LAYOUT_KEY, JSON.stringify(layoutData));
-            
+
             // Save Google Drive file info
             const driveFileInfo = {
                 fileId: this.currentDriveFileId,
-                fileName: this.currentDriveFileName
+                fileName: this.currentDriveFileName,
             };
             localStorage.setItem(this.LOCAL_DRIVE_FILE_KEY, JSON.stringify(driveFileInfo));
         } catch (error) {
@@ -2121,7 +2178,7 @@ class CharacterSheet {
     private initializeGoogleDrive(): void {
         try {
             this.googleDriveManager = new GoogleDriveManager();
-            
+
             // Listen for sign-in/sign-out events
             window.addEventListener('google-signed-in', () => {
                 this.updateDriveButtonVisibility();
@@ -2134,9 +2191,9 @@ class CharacterSheet {
                     }
                 }, 2000);
             });
-            
+
             window.addEventListener('google-signed-out', () => this.updateDriveButtonVisibility());
-            
+
             // Initial button visibility
             this.updateDriveButtonVisibility();
         } catch (error) {
@@ -2161,7 +2218,7 @@ class CharacterSheet {
     }
 
     private async saveToGoogleDrive(): Promise<void> {
-        if (!this.googleDriveManager || !this.googleDriveManager.isSignedIn()) {
+        if (!this.googleDriveManager?.isSignedIn()) {
             this.showSaveStatus('error', 'Please sign in to Google Drive first');
             return;
         }
@@ -2173,20 +2230,20 @@ class CharacterSheet {
             // Prepare data to save
             const fileData = {
                 'character-definition': this.data,
-                'sheet-layout': this.layoutManager.getLayout()
+                'sheet-layout': this.layoutManager.getLayout(),
             };
 
             const dataToSave = JSON.stringify(fileData, null, 2);
-            
+
             // Use stored filename if available, otherwise generate from character name
-            const fileName = this.currentDriveFileName || (this.data.characterName
-                ? `${this.data.characterName}-character-sheet.json`
-                : 'character-sheet.json');
+            const fileName =
+                this.currentDriveFileName ||
+                (this.data.characterName ? `${this.data.characterName}-character-sheet.json` : 'character-sheet.json');
 
             const result = await this.googleDriveManager.saveToGoogleDrive(
                 fileName,
                 dataToSave,
-                this.currentDriveFileId || undefined
+                this.currentDriveFileId || undefined,
             );
 
             this.currentDriveFileId = result.fileId;
@@ -2209,7 +2266,7 @@ class CharacterSheet {
     }
 
     private async saveAsNewToGoogleDrive(): Promise<void> {
-        if (!this.googleDriveManager || !this.googleDriveManager.isSignedIn()) {
+        if (!this.googleDriveManager?.isSignedIn()) {
             this.showSaveStatus('error', 'Please sign in to Google Drive first');
             return;
         }
@@ -2241,7 +2298,7 @@ class CharacterSheet {
             // Prepare data to save
             const fileData = {
                 'character-definition': this.data,
-                'sheet-layout': this.layoutManager.getLayout()
+                'sheet-layout': this.layoutManager.getLayout(),
             };
 
             const dataToSave = JSON.stringify(fileData, null, 2);
@@ -2250,7 +2307,7 @@ class CharacterSheet {
             const result = await this.googleDriveManager.saveToGoogleDrive(
                 finalFileName,
                 dataToSave,
-                undefined // No fileId = create new file
+                undefined, // No fileId = create new file
             );
 
             // Update current file ID and filename to the new file
@@ -2274,7 +2331,7 @@ class CharacterSheet {
     }
 
     private async showGoogleDriveFilePicker(): Promise<void> {
-        if (!this.googleDriveManager || !this.googleDriveManager.isSignedIn()) {
+        if (!this.googleDriveManager?.isSignedIn()) {
             this.showSaveStatus('error', 'Please sign in to Google Drive first');
             return;
         }
@@ -2309,12 +2366,12 @@ class CharacterSheet {
         if (files.length === 0) {
             fileList.innerHTML = '<div class="no-files">No character sheets found in Google Drive</div>';
         } else {
-            files.forEach(file => {
+            files.forEach((file) => {
                 const fileItem = document.createElement('div');
                 fileItem.className = 'drive-file-item';
 
                 const modifiedDate = new Date(file.modifiedTime);
-                const dateStr = modifiedDate.toLocaleDateString() + ' ' + modifiedDate.toLocaleTimeString();
+                const dateStr = `${modifiedDate.toLocaleDateString()} ${modifiedDate.toLocaleTimeString()}`;
 
                 fileItem.innerHTML = `
                     <div class="file-info">
@@ -2368,7 +2425,7 @@ class CharacterSheet {
             const fileData = JSON.parse(result.content);
 
             // Handle both old format and new format
-            let characterData: any;
+            let characterData: SavedJson;
             let layoutData: LayoutData | undefined;
 
             if (fileData['character-definition'] && fileData['sheet-layout']) {
@@ -2475,9 +2532,13 @@ class CharacterSheet {
         if (modal) {
             const loadButtons = modal.querySelectorAll('.load-file-btn') as NodeListOf<HTMLButtonElement>;
             const deleteButtons = modal.querySelectorAll('.delete-file-btn') as NodeListOf<HTMLButtonElement>;
-            
-            loadButtons.forEach(btn => { btn.disabled = !enabled; });
-            deleteButtons.forEach(btn => { btn.disabled = !enabled; });
+
+            loadButtons.forEach((btn) => {
+                btn.disabled = !enabled;
+            });
+            deleteButtons.forEach((btn) => {
+                btn.disabled = !enabled;
+            });
         }
     }
 
@@ -2501,7 +2562,7 @@ class CharacterSheet {
             return;
         }
 
-        if (!this.googleDriveManager || !this.googleDriveManager.isSignedIn()) {
+        if (!this.googleDriveManager?.isSignedIn()) {
             alert('Please sign in to Google Drive first to upload images.');
             return;
         }
@@ -2592,7 +2653,7 @@ class CharacterSheet {
         }
 
         // If not cached and we have a file ID, fetch from Drive
-        if (this.data.characterImageFileId && this.googleDriveManager && this.googleDriveManager.isSignedIn()) {
+        if (this.data.characterImageFileId && this.googleDriveManager?.isSignedIn()) {
             try {
                 const blob = await this.googleDriveManager.loadImage(this.data.characterImageFileId);
                 const reader = new FileReader();
@@ -2607,7 +2668,8 @@ class CharacterSheet {
                 // Image might have been deleted from Drive - show placeholder
                 const imageDisplay = document.getElementById('imageDisplay');
                 if (imageDisplay) {
-                    imageDisplay.innerHTML = '<div class="image-placeholder">Image not found (may have been deleted)</div>';
+                    imageDisplay.innerHTML =
+                        '<div class="image-placeholder">Image not found (may have been deleted)</div>';
                 }
             }
         }
@@ -2618,7 +2680,7 @@ class CharacterSheet {
 function initializeAccordions() {
     const groups = document.querySelectorAll('.content-group');
 
-    groups.forEach(group => {
+    groups.forEach((group) => {
         const header = group.querySelector('.accordion-header') as HTMLElement;
         if (!header) return;
 
@@ -2647,7 +2709,7 @@ function initializeAccordions() {
     if (window.innerWidth <= 768) {
         const sectionsToCollapse = ['backstory-appearance', 'equipment-coins'];
 
-        sectionsToCollapse.forEach(sectionName => {
+        sectionsToCollapse.forEach((sectionName) => {
             // Only if not previously set by user
             if (localStorage.getItem(`accordion-${sectionName}`) === null) {
                 const section = document.querySelector(`[data-group="${sectionName}"]`);

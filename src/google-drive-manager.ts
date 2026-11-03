@@ -6,11 +6,37 @@ export interface DriveFile {
     modifiedTime: string;
 }
 
+// Minimal types for the parts of Google Identity Services (accounts.google.com/gsi/client) we use
+interface TokenResponse {
+    access_token?: string;
+    expires_in?: number;
+    error?: string;
+}
+
+interface TokenClient {
+    requestAccessToken(overrideConfig?: { prompt?: string }): void;
+}
+
+interface GoogleOAuth2 {
+    initTokenClient(config: {
+        client_id: string;
+        scope: string;
+        callback: (response: TokenResponse) => void;
+    }): TokenClient;
+    revoke(accessToken: string, done?: () => void): void;
+}
+
+declare global {
+    interface Window {
+        google?: { accounts?: { oauth2?: GoogleOAuth2 } };
+    }
+}
+
 export class GoogleDriveManager {
     private accessToken: string | null = null;
     private readonly CLIENT_ID = '924934734078-5qpia0pclmotj2dg2k628aejvbcfdbnl.apps.googleusercontent.com';
     private readonly SCOPES = 'https://www.googleapis.com/auth/drive.file';
-    private tokenClient: any = null;
+    private tokenClient: TokenClient | null = null;
     private readonly TOKEN_STORAGE_KEY = 'google_drive_access_token';
     private readonly EXPIRY_STORAGE_KEY = 'google_drive_token_expiry';
     private refreshTimer: number | null = null;
@@ -18,7 +44,7 @@ export class GoogleDriveManager {
     constructor() {
         // Try to restore token from sessionStorage
         this.restoreToken();
-        
+
         // Initialize Google Identity Services
         this.initializeGIS();
     }
@@ -26,13 +52,13 @@ export class GoogleDriveManager {
     private restoreToken(): void {
         const storedToken = sessionStorage.getItem(this.TOKEN_STORAGE_KEY);
         const storedExpiry = sessionStorage.getItem(this.EXPIRY_STORAGE_KEY);
-        
+
         if (storedToken && storedExpiry) {
-            const expiryTime = parseInt(storedExpiry);
+            const expiryTime = parseInt(storedExpiry, 10);
             const now = Date.now();
-            
+
             // Check if token is still valid (with 5 minute buffer)
-            if (expiryTime > now + (5 * 60 * 1000)) {
+            if (expiryTime > now + 5 * 60 * 1000) {
                 this.accessToken = storedToken;
                 console.log('Restored access token from session');
                 // Notify that we're signed in
@@ -57,12 +83,12 @@ export class GoogleDriveManager {
 
         const now = Date.now();
         const timeUntilExpiry = expiryTime - now;
-        
+
         // Refresh 5 minutes before expiry (or immediately if less than 5 min left)
-        const refreshIn = Math.max(0, timeUntilExpiry - (5 * 60 * 1000));
-        
+        const refreshIn = Math.max(0, timeUntilExpiry - 5 * 60 * 1000);
+
         console.log(`Token refresh scheduled in ${Math.round(refreshIn / 1000 / 60)} minutes`);
-        
+
         this.refreshTimer = window.setTimeout(() => {
             console.log('Auto-refreshing access token...');
             this.silentTokenRefresh();
@@ -88,27 +114,30 @@ export class GoogleDriveManager {
     private initializeGIS(): void {
         // Wait for Google Identity Services library to load
         const checkGIS = setInterval(() => {
-            if ((window as any).google?.accounts?.oauth2) {
+            const oauth2 = window.google?.accounts?.oauth2;
+            if (oauth2) {
                 clearInterval(checkGIS);
-                
-                this.tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
+
+                this.tokenClient = oauth2.initTokenClient({
                     client_id: this.CLIENT_ID,
                     scope: this.SCOPES,
-                    callback: (response: any) => {
+                    callback: (response: TokenResponse) => {
                         if (response.access_token) {
                             this.accessToken = response.access_token;
-                            
+
                             // Store token and expiry in sessionStorage
                             sessionStorage.setItem(this.TOKEN_STORAGE_KEY, response.access_token);
                             // Token typically expires in 1 hour (3600 seconds)
                             const expiryTime = Date.now() + (response.expires_in || 3600) * 1000;
                             sessionStorage.setItem(this.EXPIRY_STORAGE_KEY, expiryTime.toString());
-                            
-                            console.log('OAuth access token received, expires in ' + (response.expires_in || 3600) + ' seconds');
-                            
+
+                            console.log(
+                                `OAuth access token received, expires in ${response.expires_in || 3600} seconds`,
+                            );
+
                             // Schedule automatic refresh before expiry
                             this.scheduleTokenRefresh(expiryTime);
-                            
+
                             // Dispatch custom event to notify app of sign-in
                             window.dispatchEvent(new CustomEvent('google-signed-in'));
                         } else if (response.error) {
@@ -155,7 +184,7 @@ export class GoogleDriveManager {
 
         if (this.accessToken) {
             // Revoke token
-            (window as any).google.accounts.oauth2.revoke(this.accessToken, () => {
+            window.google?.accounts?.oauth2?.revoke(this.accessToken, () => {
                 console.log('Access token revoked');
             });
             this.accessToken = null;
@@ -172,8 +201,8 @@ export class GoogleDriveManager {
         }
 
         const headers = {
-            'Authorization': `Bearer ${this.accessToken}`,
-            ...options.headers
+            Authorization: `Bearer ${this.accessToken}`,
+            ...options.headers,
         };
 
         const response = await fetch(url, { ...options, headers });
@@ -192,7 +221,7 @@ export class GoogleDriveManager {
         try {
             const metadata = {
                 name: fileName,
-                mimeType: 'application/json'
+                mimeType: 'application/json',
             };
 
             const file = new Blob([content], { type: 'application/json' });
@@ -215,7 +244,7 @@ export class GoogleDriveManager {
 
             const response = await this.makeApiRequest(url, {
                 method: method,
-                body: formData
+                body: formData,
             });
 
             if (!response.ok) {
@@ -233,9 +262,7 @@ export class GoogleDriveManager {
 
     public async loadFromGoogleDrive(fileId: string): Promise<{ content: string }> {
         try {
-            const response = await this.makeApiRequest(
-                `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`
-            );
+            const response = await this.makeApiRequest(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
 
             if (!response.ok) {
                 throw new Error(`Failed to load file: ${response.status}`);
@@ -271,10 +298,9 @@ export class GoogleDriveManager {
 
     public async deleteFile(fileId: string): Promise<void> {
         try {
-            const response = await this.makeApiRequest(
-                `https://www.googleapis.com/drive/v3/files/${fileId}`,
-                { method: 'DELETE' }
-            );
+            const response = await this.makeApiRequest(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+                method: 'DELETE',
+            });
 
             if (!response.ok && response.status !== 204) {
                 throw new Error(`Failed to delete file: ${response.status}`);
@@ -289,7 +315,7 @@ export class GoogleDriveManager {
         try {
             const metadata = {
                 name: fileName,
-                mimeType: file.type
+                mimeType: file.type,
             };
 
             const formData = new FormData();
@@ -300,7 +326,7 @@ export class GoogleDriveManager {
 
             const response = await this.makeApiRequest(url, {
                 method: 'POST',
-                body: formData
+                body: formData,
             });
 
             if (!response.ok) {
@@ -318,9 +344,7 @@ export class GoogleDriveManager {
 
     public async loadImage(fileId: string): Promise<Blob> {
         try {
-            const response = await this.makeApiRequest(
-                `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`
-            );
+            const response = await this.makeApiRequest(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
 
             if (!response.ok) {
                 throw new Error(`Failed to load image: ${response.status}`);
